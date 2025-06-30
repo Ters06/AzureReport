@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block title %}Virtual Machines{% endblock %}
+{% block content %}
+<h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-white">Virtual Machines</h1>
+<div class="report-card p-6">
+    {% include 'pagination_controls.html' %}
+    <div class="overflow-x-auto mt-4">
+        <table class="w-full text-left table-sortable" id="resourceTable">
+            <thead>
+                <tr>
+                    <th class="sortable" data-column-index="0" data-sort-type="str">Name <span class="sort-arrow"></span><button class="filter-btn" aria-label="Filter Name">▼</button></th>
+                    <th class="sortable" data-column-index="1" data-sort-type="str">Subscription <span class="sort-arrow"></span><button class="filter-btn" aria-label="Filter Subscription">▼</button></th>
+                    <th class="sortable" data-column-index="2" data-sort-type="str">Resource Group <span class="sort-arrow"></span><button class="filter-btn" aria-label="Filter Resource Group">▼</button></th>
+                    <th class="sortable" data-column-index="3" data-sort-type="str">OS <span class="sort-arrow"></span><button class="filter-btn" aria-label="Filter OS">▼</button></th>
+                    <th class="sortable" data-column-index="4" data-sort-type="str">Size <span class="sort-arrow"></span><button class="filter-btn" aria-label="Filter Size">▼</button></th>
+                    <th class="sortable" data-column-index="5" data-sort-type="str">Status <span class="sort-arrow"></span><button class="filter-btn" aria-label="Filter Status">▼</button></th>
+                    <th class="sortable" data-column-index="6" data-sort-type="num"># Recs <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-column-index="7" data-sort-type="num">Savings <span class="sort-arrow"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for vm in vms %}
+                <tr>
+                    <td><a href="{{ url_for('vm_detail', vm_name=vm.name) }}" class="link-style">{{ vm.name }}</a></td>
+                    <td>{{ vm.subscription_name }}</td>
+                    <td>{{ vm.resource_group_name }}</td>
+                    <td>{{ vm.os }}</td>
+                    <td>{{ vm.size }}</td>
+                    <td>{{ vm.status }}</td>
+                    <td class="text-center">{{ vm.recommendation_count }}</td>
+                    <td class="text-right">{{ vm.potential_savings|format_currency }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include 'pagination_controls.html' %}
+</div>
+{% endblock %}

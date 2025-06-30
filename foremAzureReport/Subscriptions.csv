@@ -1,0 +1,16 @@
+SEP=,
+SUBSCRIPTION NAME,SUBSCRIPTION ID,MY ROLE,CURRENT COST,SECURE SCORE,PARENT MANAGEMENT GROUP,STATUS,
+"CspAcc01","9c9cb071-ac7c-45be-8105-4f4eb5f8e672","Owner","€913.09","-","Hébergement","Active"
+"CspDev01","f7c221a0-aa12-4c93-a43e-e9bb09d9104b","Owner","€326.27","-","Hébergement","Active"
+"CspForm01","b15e8acf-afaf-4940-8501-169c23729b5c","Owner","0.00","-","Hébergement","Active"
+"CspProd01","39b847ee-38c1-4871-97bc-b815e2e56539","Owner","€1,291.73","-","Hébergement","Active"
+"DsiAcc01","cbf821af-139f-472b-bd9f-bd9e7c82395c","Owner","€3,978.24","-","Hébergement","Active"
+"DsiADC01","27968616-adf3-45ac-9277-2750fe1d896f","Owner","€315.22","-","Hébergement","Active"
+"DsiDev01","8d6d19d2-d4f8-4542-9421-d59f4257ccc5","Owner","€7,143.73","-","Hébergement","Active"
+"DsiDmz01","05509e54-c22d-42ec-ae15-948a48340383","Owner","€2,343.40","45","Hébergement","Active"
+"DsiForm01","cdfae65f-c17c-4287-8472-30348f9e120a","Owner","€864.40","-","Hébergement","Active"
+"DsiProd01","be5ce746-52ca-483a-9c9b-782111a94978","Owner","€31,040.13","-","Hébergement","Active"
+"DsiReservations01","fae48c6e-4b87-40d7-945c-0b8c812f79c6","Owner","€3,298.18","-","Forem","Active"
+"DsiStandAlone01","9f9fed7e-a0d8-4b8e-898d-3ddc967b8959","Owner","0.00","-","Hébergement","Active"
+"DsiSubTest01","2242dd06-509c-4726-9817-c96cba2dbf87","Owner","€0.04","80","Forem","Active"
+"DsiTier0","c704e378-20de-426d-af3d-6ef10c3545f0","Owner","€6,178.56","-","Core","Active"
