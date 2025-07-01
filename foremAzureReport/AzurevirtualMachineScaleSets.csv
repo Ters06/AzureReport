@@ -1,5 +1,0 @@
-﻿NAME,SUBSCRIPTION,RESOURCE GROUP,LOCATION,PROVISIONING STATE,STATUS,OPERATING SYSTEM,SIZE,INSTANCES,ORCHESTRATION MODE,PUBLIC IP ADDRESS
-"foremcmg","DsiTier0","rgpforemcmg","West Europe","Succeeded","All succeeded","Windows","Standard_A2_V2","1","Uniform","52.143.6.114"
-"svascalesetdevopsubuntu2204","DsiTier0","RGASCALESETDEVOPS","West Europe","Succeeded","Succeeded","Linux","Standard_D4S_v5","0","Uniform"," -"
-"svpscalesetdevopsteste2e","DsiTier0","RGPSCALESETDEVOPS","West Europe","Succeeded","All succeeded","Linux","Standard_D4S_v5","1","Uniform"," -"
-"svpscalesetdevopsubuntu2204","DsiTier0","RGPSCALESETDEVOPS","West Europe","Succeeded","Succeeded","Linux","Standard_D4s_v5","0","Uniform"," -"
