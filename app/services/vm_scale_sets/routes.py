@@ -2,14 +2,13 @@ from flask import Blueprint, render_template, request
 from sqlalchemy import func, desc, asc
 from app.db import db
 from .models import VMSS
-from app.services.core.models import Subscription, ResourceGroup
-from app.services.recommendations.models import RecommendationInstance, RecommendationType
+from app.services.core.models import Resource, ResourceGroup, Subscription
+from app.services.recommendations.models import RecommendationInstance
 
 vmss_bp = Blueprint('vmss', __name__, url_prefix='/vmss')
 ALLOWED_LIMITS = [10, 25, 50, 100]
 
 def get_distinct_values(query, model, column_name):
-    """Helper to get distinct values from the current query context."""
     return [row[0] for row in query.with_entities(getattr(model, column_name)).distinct().filter(getattr(model, column_name).isnot(None)).order_by(getattr(model, column_name)).all()]
 
 @vmss_bp.route('/')
@@ -22,7 +21,7 @@ def vmss_list():
     sort_order = request.args.get('sort_order', 'asc')
 
     active_filters = {}
-    base_query = db.session.query(VMSS).join(VMSS.resource_group).join(ResourceGroup.subscription)
+    base_query = db.session.query(VMSS).join(ResourceGroup, VMSS.resource_group_id == ResourceGroup.id).join(Subscription, ResourceGroup.subscription_id == Subscription.id)
 
     for col in ['os', 'size', 'status', 'subscription_name', 'resource_group_name']:
         filter_values = request.args.get(col)
@@ -40,14 +39,14 @@ def vmss_list():
         RecommendationInstance.resource_id,
         func.count(RecommendationInstance.id).label('recommendation_count'),
         func.sum(RecommendationInstance.potential_savings).label('potential_savings')
-    ).filter(func.lower(RecommendationInstance.resource_type) == 'virtual machine scale set').group_by(RecommendationInstance.resource_id).subquery()
+    ).group_by(RecommendationInstance.resource_id).subquery()
 
     final_query = base_query.add_columns(
-        Subscription.name.label('subscription_name'),
-        ResourceGroup.name.label('resource_group_name'),
-        func.ifnull(recs_subquery.c.recommendation_count, 0).label('recommendation_count'),
-        func.ifnull(recs_subquery.c.potential_savings, 0).label('potential_savings')
-    ).outerjoin(recs_subquery, VMSS.id == recs_subquery.c.resource_id)
+            Subscription.name.label('subscription_name'),
+            ResourceGroup.name.label('resource_group_name'),
+            func.ifnull(recs_subquery.c.recommendation_count, 0).label('recommendation_count'),
+            func.ifnull(recs_subquery.c.potential_savings, 0).label('potential_savings')
+        ).outerjoin(recs_subquery, VMSS.id == recs_subquery.c.resource_id)
 
     sort_column_map = {
         'name': VMSS.name, 'os': VMSS.os, 'size': VMSS.size, 'instances': VMSS.instances, 'status': VMSS.status,
@@ -75,10 +74,10 @@ def vmss_list():
     rows = []
     for vmss, sub_name, rg_name, rec_count, savings in paginated_results.items:
         rows.append({
+            'resource': vmss,
             'name': vmss.name, 'subscription_name': sub_name, 'resource_group_name': rg_name,
             'os': vmss.os, 'size': vmss.size, 'instances': vmss.instances, 'status': vmss.status,
             'recommendation_count': rec_count, 'potential_savings': savings,
-            'resource_type': 'Virtual machine scale set', 'resource_id': vmss.id
         })
         
     filter_data = {
@@ -94,11 +93,10 @@ def vmss_list():
                            page=page, total_pages=paginated_results.pages, total_items=paginated_results.total, 
                            limit=limit, sort_by=sort_by, sort_order=sort_order)
 
-@vmss_bp.route('/<resource_name>')
-def vmss_detail(resource_name):
-    vmss_item = VMSS.query.filter_by(name=resource_name).first_or_404()
-    recommendations = RecommendationInstance.query.join(RecommendationType).filter(
-        func.lower(RecommendationInstance.resource_type) == 'virtual machine scale set',
-        RecommendationInstance.resource_id == vmss_item.id
-    ).order_by(RecommendationType.impact).all()
+@vmss_bp.route('<path:resource_id>')
+def vmss_detail(resource_id):
+    # The full resource ID from the URL needs a leading slash to match the DB
+    full_resource_id = f"/{resource_id}"
+    vmss_item = VMSS.query.filter_by(id=full_resource_id).first_or_404()
+    recommendations = RecommendationInstance.query.filter_by(resource_id=full_resource_id).all()
     return render_template('vmss_detail.html', vmss=vmss_item, recommendations=recommendations)

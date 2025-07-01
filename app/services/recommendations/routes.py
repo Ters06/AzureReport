@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, current_app
 from sqlalchemy import func, desc, asc
 from app.db import db
 from .models import RecommendationInstance, RecommendationType
+from app.services.core.models import Resource, ResourceGroup, Subscription
 
 recs_bp = Blueprint('recs', __name__, url_prefix='/recommendations')
 ALLOWED_LIMITS = [10, 25, 50, 100]
@@ -20,13 +21,13 @@ def recommendations_list():
     sort_order = request.args.get('sort_order', 'desc')
     
     active_filters = {}
-    base_query = RecommendationInstance.query.join(RecommendationType)
+    base_query = db.session.query(RecommendationInstance).join(RecommendationType).outerjoin(Resource).outerjoin(ResourceGroup).outerjoin(Subscription)
     
     filter_map = {
         'impact': (RecommendationType, 'impact'),
-        'subscription_name': (RecommendationInstance, 'subscription_name'),
-        'resource_group_name': (RecommendationInstance, 'resource_group_name'),
-        'resource_type': (RecommendationInstance, 'resource_type'),
+        'subscription_name': (Subscription, 'name'),
+        'resource_group_name': (ResourceGroup, 'name'),
+        'resource_type': (Resource, 'type'),
         'category': (RecommendationType, 'category')
     }
 
@@ -48,11 +49,11 @@ def recommendations_list():
     page_title = " ".join(title_parts) + " Recommendations" if title_parts else "All Recommendations"
 
     sort_column_map = {
-        'resource_name': RecommendationInstance.resource_name,
+        'resource_name': Resource.name,
         'impact': RecommendationType.impact,
-        'resource_type': RecommendationInstance.resource_type,
-        'subscription_name': RecommendationInstance.subscription_name,
-        'resource_group_name': RecommendationInstance.resource_group_name,
+        'resource_type': Resource.type,
+        'subscription_name': Subscription.name,
+        'resource_group_name': ResourceGroup.name,
         'potential_savings': RecommendationInstance.potential_savings,
     }
     sort_column = sort_column_map.get(sort_by, RecommendationType.impact)
@@ -74,30 +75,34 @@ def recommendations_list():
 
     rows = []
     for rec in paginated_results.items:
-        row_data = {
-            'resource_name': rec.resource_name,
-            'resource_type': rec.resource_type,
+        rows.append({
+            'resource': rec.resource,
+            'resource_name': rec.resource.name if rec.resource else 'N/A (Resource not imported)',
+            'resource_type': rec.resource.type if rec.resource else 'N/A',
             'impact': rec.recommendation_type.impact,
             'recommendation_text': rec.recommendation_type.text,
-            'subscription_name': rec.subscription_name,
-            'resource_group_name': rec.resource_group_name,
+            'subscription_name': rec.resource.resource_group.subscription.name if rec.resource else 'N/A',
+            'resource_group_name': rec.resource.resource_group.name if rec.resource else 'N/A',
             'potential_savings': rec.potential_savings,
-            'resource_uri': rec.resource_uri,
-            # FIX: Added the missing resource_id to the row data
-            'resource_id': rec.resource_id 
-        }
-        rows.append(row_data)
-
+        })
 
     filter_data = {
         'impact': get_distinct_values(base_query, RecommendationType, 'impact'),
-        'subscription_name': get_distinct_values(base_query, RecommendationInstance, 'subscription_name'),
-        'resource_group_name': get_distinct_values(base_query, RecommendationInstance, 'resource_group_name'),
-        'resource_type': get_distinct_values(base_query, RecommendationInstance, 'resource_type'),
+        'subscription_name': get_distinct_values(base_query, Subscription, 'name'),
+        'resource_group_name': get_distinct_values(base_query, ResourceGroup, 'name'),
+        'resource_type': get_distinct_values(base_query, Resource, 'type'),
+    }
+
+    # FIX: Dynamically build the detail route map from all service configurations and pass it to the template.
+    detail_routes = {
+        s['RESOURCE_TYPE']: s['DETAIL_ROUTE'] 
+        for s in current_app.service_configs 
+        if s.get('RESOURCE_TYPE') and s.get('DETAIL_ROUTE')
     }
 
     return render_template('recommendations.html', 
                            headers=headers, rows=rows, page_title=page_title,
                            filter_data=filter_data, active_filters=active_filters,
+                           detail_routes=detail_routes,
                            page=page, total_pages=paginated_results.pages, total_items=paginated_results.total, 
                            limit=limit, sort_by=sort_by, sort_order=sort_order)

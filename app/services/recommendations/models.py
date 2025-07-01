@@ -9,6 +9,7 @@ class RecommendationType(db.Model):
     category = db.Column(db.String)
     impact = db.Column(db.String)
     
+    # This relationship expects to find a 'recommendation_type' property on the RecommendationInstance model.
     instances = relationship("RecommendationInstance", back_populates="recommendation_type", cascade="all, delete-orphan")
 
 class RecommendationInstance(db.Model):
@@ -16,16 +17,11 @@ class RecommendationInstance(db.Model):
     __tablename__ = 'recommendation_instances'
     id = db.Column(db.Integer, primary_key=True)
     recommendation_type_id = db.Column(db.Integer, db.ForeignKey('recommendation_types.id'), nullable=False)
-    
-    resource_id = db.Column(db.Integer) 
-    resource_type = db.Column(db.String)
-    
-    subscription_name = db.Column(db.String)
-    resource_group_name = db.Column(db.String)
-    resource_name = db.Column(db.String)
     potential_savings = db.Column(db.Float)
     
-    # FIX: Add a column to store the full Azure Resource ID
-    resource_uri = db.Column(db.String)
+    resource_id = db.Column(db.String, db.ForeignKey('resources.id'), nullable=True)
+    resource = relationship("Resource", back_populates="recommendations")
 
+    # FIX: Added the missing relationship back to RecommendationType.
+    # This is the property that SQLAlchemy was looking for.
     recommendation_type = relationship("RecommendationType", back_populates="instances")

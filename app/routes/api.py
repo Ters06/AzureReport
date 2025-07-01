@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 from sqlalchemy import func
 from app.db import db
 from app.services.recommendations.models import RecommendationInstance, RecommendationType
-from app.services.core.models import Subscription
+from app.services.core.models import Resource, ResourceGroup, Subscription
 
 api_bp = Blueprint('api', __name__)
 
@@ -49,18 +49,19 @@ def recommendations_by_subscription(group_by):
     grouping_attr = getattr(RecommendationType, group_by)
     
     recs_data_query = db.session.query(
-        RecommendationInstance.subscription_name,
+        Subscription.name,
         grouping_attr,
         func.count(RecommendationInstance.id)
-    ).join(RecommendationType).filter(
-        RecommendationInstance.subscription_name.isnot(None),
-        grouping_attr.isnot(None)
-    ).group_by(RecommendationInstance.subscription_name, grouping_attr).all()
+    ).select_from(RecommendationInstance).join(RecommendationInstance.resource) \
+     .join(Resource.resource_group).join(ResourceGroup.subscription) \
+     .join(RecommendationInstance.recommendation_type) \
+     .filter(grouping_attr.isnot(None)) \
+     .group_by(Subscription.name, grouping_attr).all()
 
     all_subs = Subscription.query.order_by(Subscription.name).all()
     all_grouping_keys = [row[0] for row in db.session.query(grouping_attr).distinct().filter(grouping_attr.isnot(None)).order_by(grouping_attr).all()]
     
-    subs_data = {sub.name: {'guid': sub.subscription_id_guid, 'counts': {key: 0 for key in all_grouping_keys}} for sub in all_subs}
+    subs_data = {sub.name: {'guid': sub.id, 'counts': {key: 0 for key in all_grouping_keys}} for sub in all_subs}
     
     for sub_name, grouping_key, count in recs_data_query:
         if sub_name in subs_data and grouping_key in subs_data[sub_name]['counts']:

@@ -2,8 +2,8 @@ from flask import Blueprint, render_template, request
 from sqlalchemy import func, desc, asc
 from app.db import db
 from .models import VM
-from app.services.core.models import Subscription, ResourceGroup
-from app.services.recommendations.models import RecommendationInstance, RecommendationType
+from app.services.core.models import Resource, ResourceGroup, Subscription
+from app.services.recommendations.models import RecommendationInstance
 
 vms_bp = Blueprint('vms', __name__, url_prefix='/vms')
 ALLOWED_LIMITS = [10, 25, 50, 100]
@@ -22,7 +22,8 @@ def vms_list():
     sort_order = request.args.get('sort_order', 'asc')
     
     active_filters = {}
-    base_query = db.session.query(VM).join(VM.resource_group).join(ResourceGroup.subscription)
+    # FIX: Start the query from VM and explicitly join through the relationships
+    base_query = db.session.query(VM).join(ResourceGroup, VM.resource_group_id == ResourceGroup.id).join(Subscription, ResourceGroup.subscription_id == Subscription.id)
 
     # Apply filters from URL args
     for col in ['os', 'size', 'status', 'subscription_name', 'resource_group_name']:
@@ -41,14 +42,15 @@ def vms_list():
         RecommendationInstance.resource_id,
         func.count(RecommendationInstance.id).label('recommendation_count'),
         func.sum(RecommendationInstance.potential_savings).label('potential_savings')
-    ).filter(func.lower(RecommendationInstance.resource_type) == 'virtual machine').group_by(RecommendationInstance.resource_id).subquery()
+    ).group_by(RecommendationInstance.resource_id).subquery()
 
+    # Add columns from the already-joined tables
     final_query = base_query.add_columns(
-        Subscription.name.label('subscription_name'),
-        ResourceGroup.name.label('resource_group_name'),
-        func.ifnull(recs_subquery.c.recommendation_count, 0).label('recommendation_count'),
-        func.ifnull(recs_subquery.c.potential_savings, 0).label('potential_savings')
-    ).outerjoin(recs_subquery, VM.id == recs_subquery.c.resource_id)
+            Subscription.name.label('subscription_name'),
+            ResourceGroup.name.label('resource_group_name'),
+            func.ifnull(recs_subquery.c.recommendation_count, 0).label('recommendation_count'),
+            func.ifnull(recs_subquery.c.potential_savings, 0).label('potential_savings')
+        ).outerjoin(recs_subquery, VM.id == recs_subquery.c.resource_id)
 
     sort_column_map = {
         'name': VM.name, 'os': VM.os, 'size': VM.size, 'status': VM.status,
@@ -74,10 +76,10 @@ def vms_list():
     rows = []
     for vm, sub_name, rg_name, rec_count, savings in paginated_results.items:
         rows.append({
+            'resource': vm, # Pass the whole vm object which inherits from Resource
             'name': vm.name, 'subscription_name': sub_name, 'resource_group_name': rg_name,
             'os': vm.os, 'size': vm.size, 'status': vm.status,
-            'recommendation_count': rec_count, 'potential_savings': savings,
-            'resource_type': 'Virtual machine', 'resource_id': vm.id
+            'recommendation_count': rec_count, 'potential_savings': savings
         })
         
     filter_data = {
@@ -93,11 +95,8 @@ def vms_list():
                            page=page, total_pages=paginated_results.pages, total_items=paginated_results.total, 
                            limit=limit, sort_by=sort_by, sort_order=sort_order)
 
-@vms_bp.route('/<resource_name>')
-def vm_detail(resource_name):
-    vm = VM.query.filter_by(name=resource_name).first_or_404()
-    recommendations = RecommendationInstance.query.join(RecommendationType).filter(
-        func.lower(RecommendationInstance.resource_type) == 'virtual machine',
-        RecommendationInstance.resource_id == vm.id
-    ).order_by(RecommendationType.impact).all()
+@vms_bp.route('<path:resource_id>')
+def vm_detail(resource_id):
+    vm = VM.query.filter_by(id=f"/{resource_id}").first_or_404()
+    recommendations = RecommendationInstance.query.filter_by(resource_id=vm.id).all()
     return render_template('vm_detail.html', vm=vm, recommendations=recommendations)

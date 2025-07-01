@@ -9,7 +9,8 @@
     {% include 'pagination_controls.html' %}
     
     {# FIX: Pass the correct detail route map to the macro #}
-    {{ render_resource_table(headers, rows, sort_by, sort_order, {'Virtual machine': 'vms.vm_detail'}) }}
+    {% set detail_routes = {'Virtual machine': 'vms.vm_detail'} %}
+    {{ render_resource_table(headers, rows, sort_by, sort_order, detail_routes) }}
     
     {% include 'pagination_controls.html' %}
 </div>

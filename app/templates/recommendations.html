@@ -11,14 +11,7 @@
 <div class="report-card p-4">
     {% include 'pagination_controls.html' %}
 
-    {# FIX: Statically define the detail route map to ensure correctness #}
-    {% set detail_routes = {
-        'Virtual machine': 'vms.vm_detail',
-        'Virtual machine scale set': 'vmss.vmss_detail',
-        'Storage account': 'storage.storage_account_detail'
-    } %}
-
-    {# FIX: Pass the detail route map to the macro #}
+    {# FIX: This now correctly uses the 'detail_routes' dictionary passed from the backend, making it fully dynamic. #}
     {{ render_resource_table(headers, rows, sort_by, sort_order, detail_routes) }}
     
     {% include 'pagination_controls.html' %}

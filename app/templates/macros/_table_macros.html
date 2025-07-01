@@ -1,4 +1,4 @@
-{% macro render_resource_table(headers, rows, sort_by, sort_order, detail_route_name_map) %}
+{% macro render_resource_table(headers, rows, sort_by, sort_order, detail_route_name_map={}) %}
 <div class="overflow-x-auto mt-4">
     <table class="w-full text-left table-sortable" id="resourceTable">
         <thead>
@@ -32,12 +32,18 @@
                     >
                         {% set cell_value = row.get(header.key) %}
                         {% if header.is_link %}
-                            {# Check if a detail route is defined for this row's type and if the resource_id exists #}
-                            {% set resource_type = row.get('resource_type') %}
-                            {% set detail_route = detail_route_name_map.get(resource_type) %}
-                            
-                            {% if detail_route and row.get('resource_id') %}
-                                <a href="{{ url_for(detail_route, resource_name=cell_value) }}" class="link-style">{{ cell_value }}</a>
+                            {% set resource = row.get('resource') %}
+                            {# Check if the resource object exists (i.e., it was found in our DB) #}
+                            {% if resource %}
+                                {% set detail_route = detail_route_name_map.get(resource.type) %}
+                                {# Prefer internal detail page link if one is defined for this resource type #}
+                                {% if detail_route %}
+                                    <a href="{{ url_for(detail_route, resource_id=resource.id) }}" class="link-style">{{ cell_value }}</a>
+                                {# Fallback to Azure Portal link if no internal detail page exists #}
+                                {% else %}
+                                    <a href="https://portal.azure.com/#resource{{ resource.id }}" class="link-style" target="_blank" rel="noopener noreferrer">{{ cell_value }}</a>
+                                {% endif %}
+                            {# If the resource object doesn't exist at all, just display the name as text #}
                             {% else %}
                                 {{ cell_value }}
                             {% endif %}

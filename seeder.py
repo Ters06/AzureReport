@@ -38,30 +38,27 @@ def create_database(app):
 def run_seeders(app, client_name, report_date, advisor_csv_file):
     """Dynamically discovers and runs all service seeders."""
     with app.app_context():
-        from app.services.core.models import ClientInfo
-        client_info = ClientInfo(name=client_name, report_date=report_date)
-        db.session.add(client_info)
-        db.session.commit()
-
         service_configs = get_service_configs()
-        seeder_context = {}
+        
+        seeder_context = {
+            'client_name': client_name,
+            'report_date': report_date,
+            'advisor_csv_file': advisor_csv_file
+        }
+        
         seed_order = ['core', 'virtual_machines', 'vm_scale_sets', 'storage_accounts', 'recommendations']
         
         for service_key in seed_order:
             config = next((c for c in service_configs if c.get('KEY') == service_key), None)
             if config and config.get('SEEDER_FUNC'):
                 print(f"--- Seeding {config.get('NAME', service_key)} ---")
-                csv_file = config.get('CSV_FILE')
-                if csv_file and not os.path.exists(csv_file):
-                    print(f"Warning: {csv_file} not found for service '{service_key}'. Skipping.")
-                    continue
                 
                 if service_key == 'recommendations':
                     config['SEEDER_FUNC'](db, seeder_context, advisor_csv_file)
                 else:
                     config['SEEDER_FUNC'](db, seeder_context)
-            
-        db.session.commit()
+        
+        # The final commit is now handled within each seeder
         print("\nAll seeders completed successfully.")
 
 

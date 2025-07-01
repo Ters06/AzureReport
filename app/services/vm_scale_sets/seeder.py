@@ -2,10 +2,9 @@ import csv
 import os
 from .models import VMSS
 
-VMSS_CSV = 'AzurevirtualMachineScaleSets.csv'
-
 def seed_vmss(db, context):
     """Seeds VM Scale Set data from its CSV file."""
+    VMSS_CSV = 'AzurevirtualMachineScaleSets.csv'
     if not os.path.exists(VMSS_CSV):
         print(f"Warning: {VMSS_CSV} not found. Skipping VMSS seeding.")
         return
@@ -19,22 +18,20 @@ def seed_vmss(db, context):
         for row in reader:
             sub_obj = sub_map.get(row['SUBSCRIPTION'].upper())
             if sub_obj:
-                rg_obj = rg_map.get((row['RESOURCE GROUP'].upper(), sub_obj.id))
+                # FIX: Use lowercase for lookup key
+                rg_id_key = f"/subscriptions/{sub_obj.id}/resourceGroups/{row['RESOURCE GROUP']}".lower()
+                rg_obj = rg_map.get(rg_id_key)
                 if rg_obj:
+                    # FIX: Create resource ID in lowercase
+                    vmss_id = f"{rg_obj.id}/providers/microsoft.compute/virtualmachinescalesets/{row['NAME']}".lower()
                     vmss = VMSS(
-                        name=row['NAME'], 
-                        location=row['LOCATION'], 
-                        provisioning_state=row['PROVISIONING STATE'],
-                        status=row['STATUS'], 
-                        os=row['OPERATING SYSTEM'], 
-                        size=row['SIZE'], 
-                        instances=row['INSTANCES'], 
-                        orchestration_mode=row['ORCHESTRATION MODE'],
-                        public_ip=row['PUBLIC IP ADDRESS'], 
-                        resource_group=rg_obj
+                        id=vmss_id, name=row['NAME'], type='Virtual machine scale set', location=row['LOCATION'],
+                        resource_group_id=rg_obj.id, status=row['STATUS'], os=row['OPERATING SYSTEM'], 
+                        size=row['SIZE'], instances=row['INSTANCES']
                     )
                     db.session.add(vmss)
-                    vmss_map[vmss.name.upper()] = vmss
+                    vmss_map[vmss_id] = vmss
+
     db.session.commit()
     print(f"Seeded {len(vmss_map)} VM Scale Sets.")
     context['vmss_map'] = vmss_map

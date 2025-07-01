@@ -2,8 +2,8 @@ from flask import Blueprint, render_template, request
 from sqlalchemy import func, desc, asc
 from app.db import db
 from .models import StorageAccount
-from app.services.core.models import Subscription, ResourceGroup
-from app.services.recommendations.models import RecommendationInstance, RecommendationType
+from app.services.core.models import Resource, ResourceGroup, Subscription
+from app.services.recommendations.models import RecommendationInstance
 
 storage_bp = Blueprint('storage', __name__, url_prefix='/storage-accounts')
 ALLOWED_LIMITS = [10, 25, 50, 100]
@@ -22,7 +22,7 @@ def storage_accounts_list():
     sort_order = request.args.get('sort_order', 'asc')
     
     active_filters = {}
-    base_query = db.session.query(StorageAccount).join(StorageAccount.resource_group).join(ResourceGroup.subscription)
+    base_query = db.session.query(StorageAccount).join(ResourceGroup, StorageAccount.resource_group_id == ResourceGroup.id).join(Subscription, ResourceGroup.subscription_id == Subscription.id)
 
     for col in ['location', 'sku', 'kind', 'subscription_name', 'resource_group_name']:
         filter_values = request.args.get(col)
@@ -40,14 +40,14 @@ def storage_accounts_list():
         RecommendationInstance.resource_id,
         func.count(RecommendationInstance.id).label('recommendation_count'),
         func.sum(RecommendationInstance.potential_savings).label('potential_savings')
-    ).filter(func.lower(RecommendationInstance.resource_type) == 'storage account').group_by(RecommendationInstance.resource_id).subquery()
+    ).group_by(RecommendationInstance.resource_id).subquery()
 
     final_query = base_query.add_columns(
-        Subscription.name.label('subscription_name'),
-        ResourceGroup.name.label('resource_group_name'),
-        func.ifnull(recs_subquery.c.recommendation_count, 0).label('recommendation_count'),
-        func.ifnull(recs_subquery.c.potential_savings, 0).label('potential_savings')
-    ).outerjoin(recs_subquery, StorageAccount.id == recs_subquery.c.resource_id)
+            Subscription.name.label('subscription_name'),
+            ResourceGroup.name.label('resource_group_name'),
+            func.ifnull(recs_subquery.c.recommendation_count, 0).label('recommendation_count'),
+            func.ifnull(recs_subquery.c.potential_savings, 0).label('potential_savings')
+        ).outerjoin(recs_subquery, StorageAccount.id == recs_subquery.c.resource_id)
 
     sort_column_map = {
         'name': StorageAccount.name, 'location': StorageAccount.location, 'sku': StorageAccount.sku, 'kind': StorageAccount.kind,
@@ -73,10 +73,10 @@ def storage_accounts_list():
     rows = []
     for sa, sub_name, rg_name, rec_count, savings in paginated_results.items:
         rows.append({
+            'resource': sa,
             'name': sa.name, 'subscription_name': sub_name, 'resource_group_name': rg_name,
             'location': sa.location, 'sku': sa.sku, 'kind': sa.kind,
             'recommendation_count': rec_count, 'potential_savings': savings,
-            'resource_type': 'Storage account', 'resource_id': sa.id
         })
         
     filter_data = {
@@ -92,11 +92,9 @@ def storage_accounts_list():
                            page=page, total_pages=paginated_results.pages, total_items=paginated_results.total, 
                            limit=limit, sort_by=sort_by, sort_order=sort_order)
 
-@storage_bp.route('/<resource_name>')
-def storage_account_detail(resource_name):
-    storage_account = StorageAccount.query.filter_by(name=resource_name).first_or_404()
-    recommendations = RecommendationInstance.query.join(RecommendationType).filter(
-        func.lower(RecommendationInstance.resource_type) == 'storage account',
-        RecommendationInstance.resource_id == storage_account.id
-    ).order_by(RecommendationType.impact).all()
+@storage_bp.route('<path:resource_id>')
+def storage_account_detail(resource_id):
+    full_resource_id = f"/{resource_id}"
+    storage_account = StorageAccount.query.filter_by(id=full_resource_id).first_or_404()
+    recommendations = RecommendationInstance.query.filter_by(resource_id=full_resource_id).all()
     return render_template('storage_account_detail.html', storage_account=storage_account, recommendations=recommendations)

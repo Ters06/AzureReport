@@ -1,7 +1,5 @@
 from flask import current_app
 from app.db import db
-from app.services.core.models import ClientInfo
-from app.services.recommendations.models import RecommendationType
 
 def format_currency(value):
     """Formats a value as currency."""
@@ -11,15 +9,20 @@ def format_currency(value):
 
 def inject_global_vars():
     """Makes global context available to all templates."""
+    # FIX: Move imports inside the function to prevent circular dependencies
+    from app.services.core.models import ClientInfo
+    from app.services.recommendations.models import RecommendationType
+
     client_info = ClientInfo.query.first()
     
-    # Get service configs from the application object to avoid circular imports
+    # Get service configs from the application object
     all_services = current_app.service_configs
     nav_services = sorted(
         [s for s in all_services if s.get('SHOW_IN_NAV')],
         key=lambda x: x.get('NAV_ORDER', 99)
     )
 
+    # Handle case where database is empty or not yet seeded
     if not client_info:
         categories_query = []
     else:
