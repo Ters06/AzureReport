@@ -1,3 +1,5 @@
+// This file should only define the functions. The main execution call is in ui.js.
+
 let categoryChartInstance, impactChartInstance, subscriptionChartInstance;
 let selectedCategory = null;
 let originalSubscriptionData = {};
@@ -175,7 +177,8 @@ function renderSubscriptionChart() {
                     const groupLabel = data.datasets[groupIndex].label;
 
                     let url = new URL(window.location.origin + "/recommendations");
-                    url.searchParams.append('subscription', subscriptionLabel);
+                    // FIX: Use 'subscription_name' to match the backend route's expected parameter
+                    url.searchParams.append('subscription_name', subscriptionLabel);
                     url.searchParams.append(currentSubGroupBy, groupLabel.replace(/ /g, '-').toLowerCase());
                     window.location.href = url.toString();
                 }

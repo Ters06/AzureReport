@@ -1,36 +1,21 @@
 {% extends "layout.html" %}
-{% block title %}VMSS: {{ vmss.name }}{% endblock %}
+{% from "macros/_table_macros.html" import render_resource_table %}
+
+{% block title %}Virtual Machine Scale Sets{% endblock %}
+
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ vmss.name }}</h1>
-    <a href="{{ url_for('vms.vmss_list') }}" class="text-blue-500 hover:underline">&larr; Back to VMSS List</a>
+<h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-white">Virtual Machine Scale Sets</h1>
+<div class="report-card p-6">
+    {% include 'pagination_controls.html' %}
+    
+    {{ render_resource_table(headers, rows, sort_by, sort_order, {'Virtual machine scale set': 'vms.vmss_detail'}) }}
+    
+    {% include 'pagination_controls.html' %}
 </div>
-<div class="report-card p-6 mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div><h3 class="kpi-title">Subscription</h3><p>{{ vmss.resource_group.subscription.name }}</p></div>
-    <div><h3 class="kpi-title">Resource Group</h3><p>{{ vmss.resource_group.name }}</p></div>
-    <div><h3 class="kpi-title">OS</h3><p>{{ vmss.os }}</p></div>
-    <div><h3 class="kpi-title">Size</h3><p>{{ vmss.size }}</p></div>
-    <div><h3 class="kpi-title">Instances</h3><p>{{ vmss.instances }}</p></div>
-    <div><h3 class="kpi-title">Status</h3><p>{{ vmss.status }}</p></div>
-    <div><h3 class="kpi-title">Public IP</h3><p>{{ vmss.public_ip or '-' }}</p></div>
-    <div><h3 class="kpi-title">Location</h3><p>{{ vmss.location }}</p></div>
-</div>
-<h2 class="text-2xl font-semibold mb-4">Recommendations</h2>
-<div class="report-card p-4">
-    <table class="w-full">
-        <thead><tr><th>Category</th><th>Impact</th><th>Recommendation</th><th class="text-right">Potential Savings</th></tr></thead>
-        <tbody>
-        {% for rec in recommendations %}
-            <tr>
-                <td>{{ rec.recommendation_type.category }}</td>
-                <td>{{ rec.recommendation_type.impact }}</td>
-                <td>{{ rec.recommendation_type.text }}</td>
-                <td class="text-right">{{ rec.potential_savings|format_currency }}</td>
-            </tr>
-        {% else %}
-            <tr><td colspan="4" class="text-center py-4">No recommendations found for this VM Scale Set.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
+
+{# Pass filter data to JavaScript #}
+<script>
+    const tableFilterData = {{ filter_data|tojson }};
+    const activeFilters = {{ active_filters|tojson }};
+</script>
 {% endblock %}

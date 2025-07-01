@@ -1,5 +1,8 @@
 {% extends "layout.html" %}
+{% from "macros/_table_macros.html" import render_resource_table %}
+
 {% block title %}{{ page_title }}{% endblock %}
+
 {% block content %}
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ page_title }}</h1>
@@ -7,41 +10,20 @@
 </div>
 <div class="report-card p-4">
     {% include 'pagination_controls.html' %}
-    <div class="overflow-x-auto mt-4">
-        <table class="w-full text-left table-sortable" id="resourceTable">
-            <thead>
-                <tr>
-                    <th class="sortable" data-column-index="0" data-sort-type="str">Resource Name <button class="filter-btn" aria-label="Filter Resource Name">▼</button></th>
-                    <th class="sortable" data-column-index="1" data-sort-type="str">Impact <button class="filter-btn" aria-label="Filter Impact">▼</button></th>
-                    <th class="sortable" data-column-index="2" data-sort-type="str">Recommendation <button class="filter-btn" aria-label="Filter Recommendation">▼</button></th>
-                    <th class="sortable" data-column-index="3" data-sort-type="str">Subscription <button class="filter-btn" aria-label="Filter Subscription">▼</button></th>
-                    <th class="sortable" data-column-index="4" data-sort-type="num">Potential Savings <span class="sort-arrow"></span></th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for rec in recommendations %}
-                <tr>
-                    <td>
-                        {# FIX: Only create a link if the resource was found in the DB (i.e., resource_id is not null) #}
-                        {% if rec.resource_type == 'Virtual machine' and rec.resource_id %}
-                            <a href="{{ url_for('vms.vm_detail', vm_name=rec.resource_name) }}" class="link-style">{{ rec.resource_name }}</a>
-                        {% elif rec.resource_type == 'Virtual machine scale set' and rec.resource_id %}
-                            <a href="{{ url_for('vms.vmss_detail', vmss_name=rec.resource_name) }}" class="link-style">{{ rec.resource_name }}</a>
-                        {% else %}
-                            {{ rec.resource_name }}
-                        {% endif %}
-                    </td>
-                    <td>{{ rec.recommendation_type.impact }}</td>
-                    <td>{{ rec.recommendation_type.text }}</td>
-                    <td>{{ rec.subscription_name }}</td>
-                    <td class="text-right">{{ rec.potential_savings|format_currency }}</td>
-                </tr>
-            {% else %}
-                <tr><td colspan="5" class="text-center py-4">No recommendations found for this filter.</td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+
+    {% set detail_routes = {
+        'Virtual machine': 'vms.vm_detail',
+        'Virtual machine scale set': 'vms.vmss_detail'
+    } %}
+
+    {{ render_resource_table(headers, rows, sort_by, sort_order, detail_routes) }}
+    
     {% include 'pagination_controls.html' %}
 </div>
+
+{# Pass filter data to JavaScript #}
+<script>
+    const tableFilterData = {{ filter_data|tojson }};
+    const activeFilters = {{ active_filters|tojson }};
+</script>
 {% endblock %}

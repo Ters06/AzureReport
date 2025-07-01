@@ -1,3 +1,4 @@
+// This is now the single entry point for all JS initialization.
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize dashboard charts if on the index page
     if (document.getElementById('categoryChart')) {
@@ -5,9 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initialize interactive tables if on a list page
-    const interactiveTable = document.querySelector('.table-sortable');
-    if (interactiveTable) {
-        initializeInteractiveTable(interactiveTable.id);
+    if (document.querySelector('.table-sortable')) {
+        initializeInteractiveTable();
     }
 
     // Initialize all dropdowns
@@ -35,18 +35,15 @@ function initializeDropdowns() {
             const dropdownId = toggle.getAttribute('data-dropdown-toggle');
             const dropdownMenu = document.getElementById(dropdownId);
 
-            // Close all other dropdowns
             document.querySelectorAll('.relative > div.absolute').forEach(menu => {
                 if (menu.id !== dropdownId) {
                     menu.classList.add('hidden');
                 }
             });
-            // Toggle the clicked one
             dropdownMenu.classList.toggle('hidden');
         });
     });
 
-    // Close dropdowns if clicking outside
     window.addEventListener('click', (event) => {
         if (!event.target.closest('[data-dropdown-toggle]')) {
             document.querySelectorAll('.relative > div.absolute').forEach(menu => {

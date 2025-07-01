@@ -3,9 +3,10 @@
 {% block content %}
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ vmss.name }}</h1>
-    <a href="{{ url_for('vmss_list') }}" class="text-blue-500 hover:underline">&larr; Back to VMSS List</a>
+    <a href="{{ url_for('vms.vmss_list') }}" class="text-blue-500 hover:underline">&larr; Back to VMSS List</a>
 </div>
 <div class="report-card p-6 mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    {# FIX: Use the correct relationship path to access related data #}
     <div><h3 class="kpi-title">Subscription</h3><p>{{ vmss.resource_group.subscription.name }}</p></div>
     <div><h3 class="kpi-title">Resource Group</h3><p>{{ vmss.resource_group.name }}</p></div>
     <div><h3 class="kpi-title">OS</h3><p>{{ vmss.os }}</p></div>

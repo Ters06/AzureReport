@@ -1,0 +1,59 @@
+{% macro render_resource_table(headers, rows, sort_by, sort_order, detail_route_name_map) %}
+<div class="overflow-x-auto mt-4">
+    <table class="w-full text-left table-sortable" id="resourceTable">
+        <thead>
+            <tr>
+                {% for header in headers %}
+                    <th 
+                        {% if header.sortable %}
+                            class="sortable" 
+                            data-column-key="{{ header.key }}" 
+                            data-current-sort-by="{{ sort_by }}" 
+                            data-current-sort-order="{{ sort_order }}"
+                        {% endif %}
+                    >
+                        {{ header.label }}
+                        {% if header.sortable and sort_by == header.key %}
+                            <span class="sort-arrow {{ 'sorted-' + sort_order }}"></span>
+                        {% endif %}
+                        {# Add filter button if the column is filterable #}
+                        {% if header.filterable %}
+                            <button class="filter-btn" aria-label="Filter {{ header.label }}">▼</button>
+                        {% endif %}
+                    </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in rows %}
+            <tr>
+                {% for header in headers %}
+                    <td 
+                        {% if header.align == 'center' %}class="text-center"{% endif %}
+                        {% if header.align == 'right' %}class="text-right"{% endif %}
+                    >
+                        {% set cell_value = row.get(header.key) %}
+                        {% if header.is_link %}
+                            {% set resource_type = row.get('resource_type', 'default') %}
+                            {% set detail_route = detail_route_name_map.get(resource_type) %}
+                            
+                            {% if detail_route and row.get('resource_id') %}
+                                <a href="{{ url_for(detail_route, vm_name=cell_value, vmss_name=cell_value) }}" class="link-style">{{ cell_value }}</a>
+                            {% else %}
+                                {{ cell_value }}
+                            {% endif %}
+                        {% elif header.format == 'currency' %}
+                            {{ cell_value|format_currency }}
+                        {% else %}
+                            {{ cell_value }}
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+        {% else %}
+            <tr><td colspan="{{ headers|length }}" class="text-center py-4">No data found for the current filters.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
