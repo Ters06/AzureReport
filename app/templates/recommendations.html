@@ -11,18 +11,20 @@
 <div class="report-card p-4">
     {% include 'pagination_controls.html' %}
 
-    {# Add the new storage account detail route to the map #}
+    {# FIX: Statically define the detail route map to ensure correctness #}
     {% set detail_routes = {
         'Virtual machine': 'vms.vm_detail',
-        'Virtual machine scale set': 'vms.vmss_detail',
+        'Virtual machine scale set': 'vmss.vmss_detail',
         'Storage account': 'storage.storage_account_detail'
     } %}
 
+    {# FIX: Pass the detail route map to the macro #}
     {{ render_resource_table(headers, rows, sort_by, sort_order, detail_routes) }}
     
     {% include 'pagination_controls.html' %}
 </div>
 
+{# Pass filter data to JavaScript #}
 <script>
     const tableFilterData = {{ filter_data|tojson }};
     const activeFilters = {{ active_filters|tojson }};

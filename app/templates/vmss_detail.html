@@ -2,13 +2,12 @@
 {% block title %}VMSS: {{ vmss.name }}{% endblock %}
 {% block content %}
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ vmss.name }}</h1>
-    <a href="{{ url_for('vms.vmss_list') }}" class="text-blue-500 hover:underline">&larr; Back to VMSS List</a>
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-white break-all">{{ vmss.name }}</h1>
+    <a href="#" onclick="history.back(); return false;" class="text-blue-500 hover:underline flex-shrink-0 ml-4">&larr; Back to Previous Page</a>
 </div>
 <div class="report-card p-6 mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    {# FIX: Use the correct relationship path to access related data #}
-    <div><h3 class="kpi-title">Subscription</h3><p>{{ vmss.resource_group.subscription.name }}</p></div>
-    <div><h3 class="kpi-title">Resource Group</h3><p>{{ vmss.resource_group.name }}</p></div>
+    <div class="break-words"><h3 class="kpi-title">Subscription</h3><p>{{ vmss.resource_group.subscription.name }}</p></div>
+    <div class="break-words"><h3 class="kpi-title">Resource Group</h3><p>{{ vmss.resource_group.name }}</p></div>
     <div><h3 class="kpi-title">OS</h3><p>{{ vmss.os }}</p></div>
     <div><h3 class="kpi-title">Size</h3><p>{{ vmss.size }}</p></div>
     <div><h3 class="kpi-title">Instances</h3><p>{{ vmss.instances }}</p></div>

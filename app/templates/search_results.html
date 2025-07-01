@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block title %}Search Results for "{{ query }}"{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-white">
+    Search Results for <span class="text-blue-500">"{{ query }}"</span>
+</h1>
+
+<div class="report-card p-6">
+    {% if results %}
+        <p class="mb-4 text-gray-600 dark:text-gray-300">Found {{ results|length }} result(s).</p>
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th>Resource Name</th>
+                    <th>Resource Type</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for result in results %}
+                <tr>
+                    <td><a href="{{ result.url }}" class="link-style">{{ result.name }}</a></td>
+                    <td>{{ result.type }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="text-center py-8 text-gray-500">No results found for your query.</p>
+    {% endif %}
+</div>
+{% endblock %}

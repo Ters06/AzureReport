@@ -9,7 +9,7 @@
         @layer components {
             .nav-link { @apply text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors; }
             .nav-dropdown-item { @apply block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600; }
-            .kpi-card { @apply bg-white dark:bg-gray-800/50 p-6 rounded-lg shadow-md transition-all hover:shadow-xl hover:ring-2 border border-gray-200 dark:border-gray-700; }
+            .kpi-card { @apply bg-white dark:bg-gray-800/50 p-4 rounded-lg shadow-md transition-all hover:shadow-xl hover:ring-2 border border-gray-200 dark:border-gray-700 flex flex-col justify-between; }
             .kpi-title { @apply font-semibold text-gray-500 dark:text-gray-400 mb-1 text-sm; }
             .report-card { @apply bg-white dark:bg-gray-800/50 rounded-lg shadow-md border border-gray-200 dark:border-gray-700; }
             table { @apply w-full text-sm text-left text-gray-500 dark:text-gray-400; }
@@ -35,16 +35,26 @@
                 <div class="flex items-center">
                     <a href="{{ url_for('main.index') }}" class="font-bold text-xl text-blue-600 dark:text-blue-400">{{ client_name }} Azure Report</a>
                 </div>
-                <div class="flex space-x-2 items-center">
+                <div class="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-end">
+                    <div class="max-w-lg w-full lg:max-w-xs">
+                        <form action="{{ url_for('main.search') }}" method="get" class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
+                            </div>
+                            <input name="q" id="search" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:border-blue-300 focus:ring-blue-500 sm:text-sm" placeholder="Search for a resource..." type="search" value="{{ request.args.get('q', '') }}">
+                        </form>
+                    </div>
+                </div>
+                <div class="flex items-center lg:ml-4">
                     <a href="{{ url_for('main.index') }}" class="nav-link">Dashboard</a>
                     <div class="relative">
                         <button data-dropdown-toggle="resources-dropdown" class="nav-link flex items-center">
                             Resources <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                         <div id="resources-dropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg py-1 hidden z-20">
-                            <a href="{{ url_for('vms.vms_list') }}" class="nav-dropdown-item">Virtual Machines</a>
-                            <a href="{{ url_for('vms.vmss_list') }}" class="nav-dropdown-item">VM Scale Sets</a>
-                            <a href="{{ url_for('storage.storage_accounts_list') }}" class="nav-dropdown-item">Storage Accounts</a>
+                            {% for service in nav_services %}
+                                <a href="{{ url_for(service.LIST_ROUTE) }}" class="nav-dropdown-item">{{ service.NAME }}</a>
+                            {% endfor %}
                         </div>
                     </div>
                      <div class="relative">

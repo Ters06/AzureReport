@@ -1,18 +1,10 @@
 import os
-import csv
-import glob
-import re
 import argparse
 from datetime import datetime
+import re
+import glob
 from app import create_app, db
-from app.models import ClientInfo, Subscription, ResourceGroup, VM, VMSS, StorageAccount, RecommendationType, RecommendationInstance
-
-# --- Configuration ---
-VMS_CSV = 'AzureVirtualMachines.csv'
-VMSS_CSV = 'AzurevirtualMachineScaleSets.csv'
-SUBSCRIPTIONS_CSV = 'Subscriptions.csv'
-RESOURCE_GROUPS_CSV = 'Azureresourcegroups.csv'
-STORAGE_ACCOUNTS_CSV = 'AzureStorageAccounts.csv'
+from app.services import get_service_configs
 
 def find_advisor_file():
     """Finds the advisor CSV file and extracts the date from its name."""
@@ -43,141 +35,35 @@ def create_database(app):
         db.create_all()
         print("Database structure created successfully from models.")
 
-def seed_data(app, client_name, report_date, advisor_csv_file):
-    """Seeds the database with data from CSV files."""
+def run_seeders(app, client_name, report_date, advisor_csv_file):
+    """Dynamically discovers and runs all service seeders."""
     with app.app_context():
-        client = ClientInfo(name=client_name, report_date=report_date)
-        db.session.add(client)
-        print(f"Seeding client: {client_name} with report date: {report_date}")
-
-        # --- Subscriptions ---
-        sub_name_map = {}
-        with open(SUBSCRIPTIONS_CSV, 'r', encoding='utf-8-sig') as f:
-            if 'sep=' in f.readline().lower(): pass
-            else: f.seek(0)
-            reader = csv.DictReader(f)
-            for row in reader:
-                sub = Subscription(name=row['SUBSCRIPTION NAME'], subscription_id_guid=row['SUBSCRIPTION ID'])
-                db.session.add(sub)
-                sub_name_map[sub.name.upper()] = sub
+        from app.services.core.models import ClientInfo
+        client_info = ClientInfo(name=client_name, report_date=report_date)
+        db.session.add(client_info)
         db.session.commit()
-        print(f"Seeded {len(sub_name_map)} subscriptions.")
+
+        service_configs = get_service_configs()
+        seeder_context = {}
+        seed_order = ['core', 'virtual_machines', 'vm_scale_sets', 'storage_accounts', 'recommendations']
         
-        # --- Resource Groups ---
-        rg_map = {}
-        with open(RESOURCE_GROUPS_CSV, 'r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                sub_obj = sub_name_map.get(row['SUBSCRIPTION'].upper())
-                if sub_obj:
-                    rg = ResourceGroup(name=row['NAME'], subscription=sub_obj)
-                    db.session.add(rg)
-                    rg_map[(rg.name.upper(), sub_obj.id)] = rg
-        db.session.commit()
-        print(f"Seeded {len(rg_map)} resource groups.")
-
-        # --- VMs ---
-        vm_map = {}
-        with open(VMS_CSV, 'r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                sub_obj = sub_name_map.get(row['SUBSCRIPTION'].upper())
-                if sub_obj:
-                    rg_obj = rg_map.get((row['RESOURCE GROUP'].upper(), sub_obj.id))
-                    if rg_obj:
-                        vm = VM(name=row['NAME'], location=row['LOCATION'], status=row['STATUS'], os=row['OPERATING SYSTEM'], size=row['SIZE'], public_ip=row['PUBLIC IP ADDRESS'], disks=row['DISKS'], resource_group=rg_obj)
-                        db.session.add(vm)
-                        vm_map[vm.name.upper()] = vm
-        db.session.commit()
-        print(f"Seeded {len(vm_map)} VMs.")
-
-        # --- VMSS ---
-        vmss_map = {}
-        with open(VMSS_CSV, 'r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                sub_obj = sub_name_map.get(row['SUBSCRIPTION'].upper())
-                if sub_obj:
-                    rg_obj = rg_map.get((row['RESOURCE GROUP'].upper(), sub_obj.id))
-                    if rg_obj:
-                        vmss = VMSS(name=row['NAME'], location=row['LOCATION'], provisioning_state=row['PROVISIONING STATE'], status=row['STATUS'], os=row['OPERATING SYSTEM'], size=row['SIZE'], instances=row['INSTANCES'], orchestration_mode=row['ORCHESTRATION MODE'], public_ip=row['PUBLIC IP ADDRESS'], resource_group=rg_obj)
-                        db.session.add(vmss)
-                        vmss_map[vmss.name.upper()] = vmss
-        db.session.commit()
-        print(f"Seeded {len(vmss_map)} VM Scale Sets.")
-
-        # --- Storage Accounts ---
-        storage_map = {}
-        if os.path.exists(STORAGE_ACCOUNTS_CSV):
-            with open(STORAGE_ACCOUNTS_CSV, 'r', encoding='utf-8-sig') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    sub_obj = sub_name_map.get(row['SUBSCRIPTION'].upper())
-                    if sub_obj:
-                        rg_obj = rg_map.get((row['RESOURCE GROUP'].upper(), sub_obj.id))
-                        if rg_obj:
-                            sa = StorageAccount(name=row['NAME'], location=row['LOCATION'], sku=row['TYPE'], kind=row['KIND'], resource_group=rg_obj)
-                            db.session.add(sa)
-                            storage_map[sa.name.upper()] = sa
-            db.session.commit()
-            print(f"Seeded {len(storage_map)} Storage Accounts.")
-        else:
-            print(f"Warning: {STORAGE_ACCOUNTS_CSV} not found. Skipping.")
-
-        # --- Recommendations ---
-        rec_type_map = {}
-        rec_count, skipped_count = 0, 0
-        with open(advisor_csv_file, 'r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row['Type'] == 'Subscription' and row['Category'] == 'Cost':
-                    skipped_count += 1
+        for service_key in seed_order:
+            config = next((c for c in service_configs if c.get('KEY') == service_key), None)
+            if config and config.get('SEEDER_FUNC'):
+                print(f"--- Seeding {config.get('NAME', service_key)} ---")
+                csv_file = config.get('CSV_FILE')
+                if csv_file and not os.path.exists(csv_file):
+                    print(f"Warning: {csv_file} not found for service '{service_key}'. Skipping.")
                     continue
-
-                rec_text = row['Recommendation']
-                rec_type = rec_type_map.get(rec_text)
-                if not rec_type:
-                    rec_type = RecommendationType(text=rec_text, category=row['Category'], impact=row['Business Impact'])
-                    db.session.add(rec_type)
-                    db.session.flush() 
-                    rec_type_map[rec_text] = rec_type
                 
-                resource_name_from_csv = row['Resource Name']
-                resource_type_str = row['Type']
-                
-                resource_id = None
-                correctly_cased_resource_name = resource_name_from_csv 
-
-                resource_obj = None
-                # FIX: Use case-insensitive comparison for resource type
-                resource_type_lower = resource_type_str.lower()
-
-                if resource_type_lower == 'virtual machine':
-                    resource_obj = vm_map.get(resource_name_from_csv.upper())
-                elif resource_type_lower == 'virtual machine scale set':
-                    resource_obj = vmss_map.get(resource_name_from_csv.upper())
-                elif resource_type_lower == 'storage account':
-                    resource_obj = storage_map.get(resource_name_from_csv.upper())
-                
-                if resource_obj:
-                    resource_id = resource_obj.id
-                    correctly_cased_resource_name = resource_obj.name
-                
-                savings_str = row.get('Potential Annual Cost Savings', '0').replace(',', '')
-                savings = float(savings_str) if savings_str else 0.0
-                
-                rec_instance = RecommendationInstance(
-                    recommendation_type=rec_type, resource_id=resource_id, resource_type=resource_type_str,
-                    subscription_name=row['Subscription Name'].split(' (')[0], resource_group_name=row['Resource Group'],
-                    resource_name=correctly_cased_resource_name, potential_savings=savings
-                )
-                db.session.add(rec_instance)
-                rec_count += 1
-        
+                if service_key == 'recommendations':
+                    config['SEEDER_FUNC'](db, seeder_context, advisor_csv_file)
+                else:
+                    config['SEEDER_FUNC'](db, seeder_context)
+            
         db.session.commit()
-        print(f"Seeded {rec_count} recommendation instances.")
-        if skipped_count > 0:
-            print(f"Skipped {skipped_count} redundant subscription-level cost recommendations.")
+        print("\nAll seeders completed successfully.")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Seed Azure Advisor report data into a SQLite database.")
@@ -188,6 +74,6 @@ if __name__ == '__main__':
     advisor_file, report_date = find_advisor_file()
     
     create_database(flask_app)
-    seed_data(flask_app, args.client_name, report_date, advisor_file)
+    run_seeders(flask_app, args.client_name, report_date, advisor_file)
     
     print("\nDatabase seeding complete. You can now run 'python run.py'.")

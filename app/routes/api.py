@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify
 from sqlalchemy import func
-from ..models import db, RecommendationInstance, RecommendationType, Subscription
+from app.db import db
+from app.services.recommendations.models import RecommendationInstance, RecommendationType
+from app.services.core.models import Subscription
 
 api_bp = Blueprint('api', __name__)
 

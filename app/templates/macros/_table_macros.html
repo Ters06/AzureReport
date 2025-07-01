@@ -5,12 +5,10 @@
             <tr>
                 {% for header in headers %}
                     <th 
-                        {% if header.sortable %}
-                            class="sortable" 
-                            data-column-key="{{ header.key }}" 
-                            data-current-sort-by="{{ sort_by }}" 
-                            data-current-sort-order="{{ sort_order }}"
-                        {% endif %}
+                        class="{% if header.sortable %}sortable{% endif %}" 
+                        data-column-key="{{ header.key }}" 
+                        data-current-sort-by="{{ sort_by }}" 
+                        data-current-sort-order="{{ sort_order }}"
                     >
                         {{ header.label }}
                         {% if header.sortable and sort_by == header.key %}
@@ -28,15 +26,16 @@
             <tr>
                 {% for header in headers %}
                     <td 
-                        {% if header.align == 'center' %}class="text-center"{% endif %}
-                        {% if header.align == 'right' %}class="text-right"{% endif %}
+                        class="break-words 
+                        {% if header.align == 'center' %}text-center{% endif %}
+                        {% if header.align == 'right' %}text-right{% endif %}"
                     >
                         {% set cell_value = row.get(header.key) %}
                         {% if header.is_link %}
-                            {% set resource_type = row.get('resource_type', 'default') %}
+                            {# Check if a detail route is defined for this row's type and if the resource_id exists #}
+                            {% set resource_type = row.get('resource_type') %}
                             {% set detail_route = detail_route_name_map.get(resource_type) %}
                             
-                            {# Use a generic 'resource_name' parameter for all detail routes #}
                             {% if detail_route and row.get('resource_id') %}
                                 <a href="{{ url_for(detail_route, resource_name=cell_value) }}" class="link-style">{{ cell_value }}</a>
                             {% else %}

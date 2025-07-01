@@ -2,12 +2,12 @@
 {% block title %}VM: {{ vm.name }}{% endblock %}
 {% block content %}
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ vm.name }}</h1>
-    <a href="{{ url_for('vms.vms_list') }}" class="text-blue-500 hover:underline">&larr; Back to VM List</a>
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-white break-all">{{ vm.name }}</h1>
+    <a href="#" onclick="history.back(); return false;" class="text-blue-500 hover:underline flex-shrink-0 ml-4">&larr; Back to Previous Page</a>
 </div>
 <div class="report-card p-6 mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div><h3 class="kpi-title">Subscription</h3><p>{{ vm.resource_group.subscription.name }}</p></div>
-    <div><h3 class="kpi-title">Resource Group</h3><p>{{ vm.resource_group.name }}</p></div>
+    <div class="break-words"><h3 class="kpi-title">Subscription</h3><p>{{ vm.resource_group.subscription.name }}</p></div>
+    <div class="break-words"><h3 class="kpi-title">Resource Group</h3><p>{{ vm.resource_group.name }}</p></div>
     <div><h3 class="kpi-title">OS</h3><p>{{ vm.os }}</p></div>
     <div><h3 class="kpi-title">Size</h3><p>{{ vm.size }}</p></div>
     <div><h3 class="kpi-title">Status</h3><p>{{ vm.status }}</p></div>

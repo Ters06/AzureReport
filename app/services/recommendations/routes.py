@@ -1,19 +1,16 @@
 from flask import Blueprint, render_template, request
 from sqlalchemy import func, desc, asc
-from ..models import db, RecommendationInstance, RecommendationType
+from app.db import db
+from .models import RecommendationInstance, RecommendationType
 
-recs_bp = Blueprint('recs', __name__)
+recs_bp = Blueprint('recs', __name__, url_prefix='/recommendations')
 ALLOWED_LIMITS = [10, 25, 50, 100]
 
-def get_distinct_rec_values(column_name):
-    """Helper for recommendation instances."""
-    return [row[0] for row in db.session.query(getattr(RecommendationInstance, column_name)).distinct().filter(getattr(RecommendationInstance, column_name).isnot(None)).order_by(getattr(RecommendationInstance, column_name)).all()]
+def get_distinct_values(query, model, column_name):
+    """Helper to get distinct values from the current query context."""
+    return [row[0] for row in query.with_entities(getattr(model, column_name)).distinct().filter(getattr(model, column_name).isnot(None)).order_by(getattr(model, column_name)).all()]
 
-def get_distinct_rec_type_values(column_name):
-    """Helper for recommendation types."""
-    return [row[0] for row in db.session.query(getattr(RecommendationType, column_name)).distinct().filter(getattr(RecommendationType, column_name).isnot(None)).order_by(getattr(RecommendationType, column_name)).all()]
-
-@recs_bp.route('/recommendations')
+@recs_bp.route('/')
 def recommendations_list():
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 25, type=int)
@@ -23,73 +20,80 @@ def recommendations_list():
     sort_order = request.args.get('sort_order', 'desc')
     
     active_filters = {}
-    query = RecommendationInstance.query.join(RecommendationType)
+    base_query = RecommendationInstance.query.join(RecommendationType)
     
-    # --- Unified Filtering Logic ---
     filter_map = {
         'impact': (RecommendationType, 'impact'),
         'subscription_name': (RecommendationInstance, 'subscription_name'),
+        'resource_group_name': (RecommendationInstance, 'resource_group_name'),
+        'resource_type': (RecommendationInstance, 'resource_type'),
         'category': (RecommendationType, 'category')
     }
 
     for key, (model, col_name) in filter_map.items():
         filter_values_str = request.args.get(key)
         if filter_values_str:
-            # Special handling for category from nav dropdowns which use hyphens
             if key == 'category':
                 filter_values_str = filter_values_str.replace('-', ' ')
             
             values_list = filter_values_str.split(',')
             active_filters[key] = values_list
-            
-            # Apply a case-insensitive filter for robustness
             column = getattr(model, col_name)
-            query = query.filter(func.lower(column).in_([v.lower() for v in values_list]))
+            base_query = base_query.filter(func.lower(column).in_([v.lower() for v in values_list]))
         
-    # Build page title based on active filters
     title_parts = []
     if active_filters.get('impact'): title_parts.append(f"{active_filters['impact'][0].title()} Impact")
     if active_filters.get('category'): title_parts.append(f"{active_filters['category'][0].title()}")
     if active_filters.get('subscription_name'): title_parts.append(f"for {active_filters['subscription_name'][0]}")
     page_title = " ".join(title_parts) + " Recommendations" if title_parts else "All Recommendations"
 
-    # --- Sorting Logic ---
     sort_column_map = {
         'resource_name': RecommendationInstance.resource_name,
         'impact': RecommendationType.impact,
-        'potential_savings': RecommendationInstance.potential_savings
+        'resource_type': RecommendationInstance.resource_type,
+        'subscription_name': RecommendationInstance.subscription_name,
+        'resource_group_name': RecommendationInstance.resource_group_name,
+        'potential_savings': RecommendationInstance.potential_savings,
     }
     sort_column = sort_column_map.get(sort_by, RecommendationType.impact)
     
     order_logic = desc(sort_column) if sort_order == 'desc' else asc(sort_column)
-    query = query.order_by(order_logic)
+    final_query = base_query.order_by(order_logic)
     
-    paginated_results = query.paginate(page=page, per_page=limit, error_out=False)
+    paginated_results = final_query.paginate(page=page, per_page=limit, error_out=False)
 
-    # --- Data for Template ---
     headers = [
         {'label': 'Resource Name', 'key': 'resource_name', 'sortable': True, 'is_link': True, 'filterable': False},
+        {'label': 'Resource Type', 'key': 'resource_type', 'sortable': True, 'filterable': True},
         {'label': 'Impact', 'key': 'impact', 'sortable': True, 'filterable': True},
         {'label': 'Recommendation', 'key': 'recommendation_text', 'sortable': False, 'filterable': False},
-        {'label': 'Subscription', 'key': 'subscription_name', 'sortable': False, 'filterable': True},
+        {'label': 'Subscription', 'key': 'subscription_name', 'sortable': True, 'filterable': True},
+        {'label': 'Resource Group', 'key': 'resource_group_name', 'sortable': True, 'filterable': True},
         {'label': 'Potential Savings', 'key': 'potential_savings', 'sortable': True, 'align': 'right', 'format': 'currency', 'filterable': False},
     ]
 
     rows = []
     for rec in paginated_results.items:
-        rows.append({
+        row_data = {
             'resource_name': rec.resource_name,
+            'resource_type': rec.resource_type,
             'impact': rec.recommendation_type.impact,
             'recommendation_text': rec.recommendation_type.text,
             'subscription_name': rec.subscription_name,
+            'resource_group_name': rec.resource_group_name,
             'potential_savings': rec.potential_savings,
-            'resource_type': rec.resource_type,
-            'resource_id': rec.resource_id
-        })
+            'resource_uri': rec.resource_uri,
+            # FIX: Added the missing resource_id to the row data
+            'resource_id': rec.resource_id 
+        }
+        rows.append(row_data)
+
 
     filter_data = {
-        'impact': get_distinct_rec_type_values('impact'),
-        'subscription_name': get_distinct_rec_values('subscription_name')
+        'impact': get_distinct_values(base_query, RecommendationType, 'impact'),
+        'subscription_name': get_distinct_values(base_query, RecommendationInstance, 'subscription_name'),
+        'resource_group_name': get_distinct_values(base_query, RecommendationInstance, 'resource_group_name'),
+        'resource_type': get_distinct_values(base_query, RecommendationInstance, 'resource_type'),
     }
 
     return render_template('recommendations.html', 

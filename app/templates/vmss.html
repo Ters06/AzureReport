@@ -8,7 +8,8 @@
 <div class="report-card p-6">
     {% include 'pagination_controls.html' %}
     
-    {{ render_resource_table(headers, rows, sort_by, sort_order, {'Virtual machine scale set': 'vms.vmss_detail'}) }}
+    {# FIX: Pass the correct detail route map to the macro #}
+    {{ render_resource_table(headers, rows, sort_by, sort_order, {'Virtual machine scale set': 'vmss.vmss_detail'}) }}
     
     {% include 'pagination_controls.html' %}
 </div>

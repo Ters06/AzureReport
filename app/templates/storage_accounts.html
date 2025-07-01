@@ -8,12 +8,13 @@
 <div class="report-card p-6">
     {% include 'pagination_controls.html' %}
     
-    {# Pass the detail route for storage accounts to the macro #}
+    {# FIX: Pass the correct detail route map to the macro #}
     {{ render_resource_table(headers, rows, sort_by, sort_order, {'Storage account': 'storage.storage_account_detail'}) }}
     
     {% include 'pagination_controls.html' %}
 </div>
 
+{# Pass filter data to JavaScript #}
 <script>
     const tableFilterData = {{ filter_data|tojson }};
     const activeFilters = {{ active_filters|tojson }};
