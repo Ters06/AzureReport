@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% from "macros/_table_macros.html" import render_resource_table %}
+
+{% block title %}Storage Accounts{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-4 text-gray-800 dark:text-white">Storage Accounts</h1>
+<div class="report-card p-6">
+    {% include 'pagination_controls.html' %}
+    
+    {# Pass the detail route for storage accounts to the macro #}
+    {{ render_resource_table(headers, rows, sort_by, sort_order, {'Storage account': 'storage.storage_account_detail'}) }}
+    
+    {% include 'pagination_controls.html' %}
+</div>
+
+<script>
+    const tableFilterData = {{ filter_data|tojson }};
+    const activeFilters = {{ active_filters|tojson }};
+</script>
+{% endblock %}

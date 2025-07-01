@@ -158,18 +158,30 @@ def vmss_list():
                            page=page, total_pages=paginated_results.pages, total_items=paginated_results.total, 
                            limit=limit, sort_by=sort_by, sort_order=sort_order)
 
-@vms_bp.route('/vm/<vm_name>')
-def vm_detail(vm_name):
-    vm = VM.query.filter_by(name=vm_name).first_or_404()
+@vms_bp.route('/vm/<resource_name>')
+def vm_detail(resource_name):
+    """Detail page for a single Virtual Machine."""
+    vm = VM.query.filter_by(name=resource_name).first_or_404()
     recs = RecommendationInstance.query.join(RecommendationType).filter(
-        RecommendationInstance.resource_type == 'Virtual machine',
+        # FIX: Use case-insensitive comparison
+        func.lower(RecommendationInstance.resource_type) == 'virtual machine',
         RecommendationInstance.resource_id == vm.id
     ).order_by(RecommendationType.impact).all()
     return render_template('vm_detail.html', vm=vm, recommendations=recs)
 
-@vms_bp.route('/vmss/<vmss_name>')
-def vmss_detail(vmss_name):
-    vmss_item = VMSS.query.filter_by(name=vmss_name).first_or_404()
+@vms_bp.route('/vmss/<resource_name>')
+def vmss_detail(resource_name):
+    """Detail page for a single VM Scale Set."""
+    vmss_item = VMSS.query.filter_by(name=resource_name).first_or_404()
+    recs = RecommendationInstance.query.join(RecommendationType).filter(
+        # FIX: Use case-insensitive comparison
+        func.lower(RecommendationInstance.resource_type) == 'virtual machine scale set',
+        RecommendationInstance.resource_id == vmss_item.id
+    ).order_by(RecommendationType.impact).all()
+    return render_template('vmss_detail.html', vmss=vmss_item, recommendations=recs)
+
+    """Detail page for a single VM Scale Set."""
+    vmss_item = VMSS.query.filter_by(name=resource_name).first_or_404()
     recs = RecommendationInstance.query.join(RecommendationType).filter(
         RecommendationInstance.resource_type == 'Virtual machine scale set',
         RecommendationInstance.resource_id == vmss_item.id

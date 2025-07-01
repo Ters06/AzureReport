@@ -1,46 +1,40 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
 
-# Initialize the SQLAlchemy extension
 db = SQLAlchemy()
 
 class ClientInfo(db.Model):
-    """Model for storing basic client and report information."""
     __tablename__ = 'client_info'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     report_date = db.Column(db.String)
 
 class Subscription(db.Model):
-    """Model for Azure Subscriptions."""
     __tablename__ = 'subscriptions'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True, nullable=False)
     subscription_id_guid = db.Column(db.String, unique=True, nullable=False)
     
-    # Relationship to Resource Groups
     resource_groups = relationship("ResourceGroup", back_populates="subscription", cascade="all, delete-orphan")
 
 class ResourceGroup(db.Model):
-    """Model for Azure Resource Groups."""
     __tablename__ = 'resource_groups'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     subscription_id = db.Column(db.Integer, db.ForeignKey('subscriptions.id'), nullable=False)
     
-    # Relationships to Subscription and other resources
     subscription = relationship("Subscription", back_populates="resource_groups")
     vms = relationship("VM", back_populates="resource_group", cascade="all, delete-orphan")
     vmss = relationship("VMSS", back_populates="resource_group", cascade="all, delete-orphan")
+    # Add relationship to Storage Accounts
+    storage_accounts = relationship("StorageAccount", back_populates="resource_group", cascade="all, delete-orphan")
     
-    # A resource group's name is unique within a subscription
     __table_args__ = (db.UniqueConstraint('name', 'subscription_id', name='_subscription_rg_uc'),)
 
 class VM(db.Model):
-    """Model for Azure Virtual Machines."""
     __tablename__ = 'vms'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, unique=True) # Ensure VM names are unique
+    name = db.Column(db.String, unique=True)
     location = db.Column(db.String)
     status = db.Column(db.String)
     os = db.Column(db.String)
@@ -52,10 +46,9 @@ class VM(db.Model):
     resource_group = relationship("ResourceGroup", back_populates="vms")
 
 class VMSS(db.Model):
-    """Model for Azure Virtual Machine Scale Sets."""
     __tablename__ = 'vmss'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, unique=True) # Ensure VMSS names are unique
+    name = db.Column(db.String, unique=True)
     location = db.Column(db.String)
     provisioning_state = db.Column(db.String)
     status = db.Column(db.String)
@@ -68,8 +61,19 @@ class VMSS(db.Model):
     
     resource_group = relationship("ResourceGroup", back_populates="vmss")
 
+# New Model for Storage Accounts
+class StorageAccount(db.Model):
+    __tablename__ = 'storage_accounts'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, unique=True)
+    location = db.Column(db.String)
+    sku = db.Column(db.String)
+    kind = db.Column(db.String)
+    resource_group_id = db.Column(db.Integer, db.ForeignKey('resource_groups.id'), nullable=False)
+    
+    resource_group = relationship("ResourceGroup", back_populates="storage_accounts")
+
 class RecommendationType(db.Model):
-    """Model for the types of recommendations from Azure Advisor."""
     __tablename__ = 'recommendation_types'
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String, unique=True)
@@ -79,7 +83,6 @@ class RecommendationType(db.Model):
     instances = relationship("RecommendationInstance", back_populates="recommendation_type", cascade="all, delete-orphan")
 
 class RecommendationInstance(db.Model):
-    """Model for specific instances of recommendations for resources."""
     __tablename__ = 'recommendation_instances'
     id = db.Column(db.Integer, primary_key=True)
     recommendation_type_id = db.Column(db.Integer, db.ForeignKey('recommendation_types.id'), nullable=False)
