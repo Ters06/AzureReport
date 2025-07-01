@@ -1,17 +1,28 @@
-import sqlite3
-import csv
 import os
-import argparse
+import csv
 import glob
 import re
+import argparse
 from datetime import datetime
+from flask import Flask
+
+# Import the database object and models
+from models import db, ClientInfo, Subscription, ResourceGroup, VM, VMSS, RecommendationType, RecommendationInstance
 
 # --- Configuration ---
-DB_FILE = 'report.db'
 VMS_CSV = 'AzureVirtualMachines.csv'
 VMSS_CSV = 'AzurevirtualMachineScaleSets.csv'
 SUBSCRIPTIONS_CSV = 'Subscriptions.csv'
 RESOURCE_GROUPS_CSV = 'Azureresourcegroups.csv'
+
+def create_flask_app():
+    """Creates a Flask app instance for context."""
+    app = Flask(__name__)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'report.db')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app)
+    return app
 
 def find_advisor_file():
     """Finds the advisor CSV file and extracts the date from its name."""
@@ -32,159 +43,151 @@ def find_advisor_file():
             return filename, report_date
         except ValueError:
             print("Warning: Could not parse date from filename. Using today's date.")
-            return filename, datetime.now().strftime('%B %d, %Y')
     
-    print("Warning: Could not find a date in the Advisor filename. Using today's date.")
     return filename, datetime.now().strftime('%B %d, %Y')
 
+def create_database(app):
+    """Creates the database and tables from the models."""
+    with app.app_context():
+        db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'report.db')
+        if os.path.exists(db_path):
+            os.remove(db_path)
+            print(f"Removed existing database '{db_path}'.")
+        db.create_all()
+        print("Database structure created successfully from models.")
 
-def create_database():
-    """Creates the SQLite database and the necessary tables with relational schema."""
-    if os.path.exists(DB_FILE):
-        os.remove(DB_FILE)
-        print(f"Removed existing database '{DB_FILE}'.")
+def seed_data(app, client_name, report_date, advisor_csv_file):
+    """Seeds the database with data from CSV files."""
+    with app.app_context():
+        client = ClientInfo(name=client_name, report_date=report_date)
+        db.session.add(client)
+        print(f"Seeding client: {client_name} with report date: {report_date}")
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    # Create Tables
-    cursor.execute('CREATE TABLE client_info (id INTEGER PRIMARY KEY, name TEXT NOT NULL, report_date TEXT)')
-    cursor.execute('CREATE TABLE subscriptions (id INTEGER PRIMARY KEY, name TEXT UNIQUE, subscription_id_guid TEXT UNIQUE)')
-    cursor.execute('CREATE TABLE resource_groups (id INTEGER PRIMARY KEY, name TEXT, subscription_id INTEGER, FOREIGN KEY(subscription_id) REFERENCES subscriptions(id), UNIQUE(name, subscription_id))')
-    cursor.execute('CREATE TABLE vms (id INTEGER PRIMARY KEY, name TEXT, location TEXT, status TEXT, os TEXT, size TEXT, public_ip TEXT, disks INTEGER, resource_group_id INTEGER, FOREIGN KEY(resource_group_id) REFERENCES resource_groups(id))')
-    
-    cursor.execute('''
-    CREATE TABLE vmss (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        location TEXT,
-        provisioning_state TEXT,
-        status TEXT,
-        os TEXT,
-        size TEXT,
-        instances INTEGER,
-        orchestration_mode TEXT,
-        public_ip TEXT,
-        resource_group_id INTEGER,
-        FOREIGN KEY(resource_group_id) REFERENCES resource_groups(id)
-    )''')
-    print("Table 'vmss' created correctly.")
-
-    cursor.execute('CREATE TABLE recommendation_types (id INTEGER PRIMARY KEY, text TEXT UNIQUE, category TEXT, impact TEXT)')
-    cursor.execute('CREATE TABLE recommendation_instances (id INTEGER PRIMARY KEY, recommendation_type_id INTEGER, resource_id INTEGER, resource_type TEXT, subscription_name TEXT, resource_group_name TEXT, resource_name TEXT, potential_savings REAL, FOREIGN KEY(recommendation_type_id) REFERENCES recommendation_types(id))')
-    
-    conn.commit()
-    conn.close()
-    print("Relational database structure created successfully.")
-
-def seed_data(client_name, report_date, advisor_csv_file):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    cursor.execute('INSERT INTO client_info (id, name, report_date) VALUES (1, ?, ?)', (client_name, report_date))
-    print(f"Seeded client: {client_name} with report date: {report_date}")
-
-    sub_name_to_pk = {}
-    with open(SUBSCRIPTIONS_CSV, 'r', encoding='utf-8-sig') as f:
-        next(f, None)
-        reader = csv.DictReader(f)
-        for row in reader:
-            sub_name = row['SUBSCRIPTION NAME']
-            sub_guid = row['SUBSCRIPTION ID']
-            cursor.execute('INSERT INTO subscriptions (name, subscription_id_guid) VALUES (?, ?)', (sub_name, sub_guid))
-            sub_pk = cursor.lastrowid
-            sub_name_to_pk[sub_name.upper()] = sub_pk
-    print(f"Seeded {len(sub_name_to_pk)} subscriptions.")
-    
-    rg_name_sub_pk_to_pk = {}
-    with open(RESOURCE_GROUPS_CSV, 'r', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            sub_pk = sub_name_to_pk.get(row['SUBSCRIPTION'].upper())
-            if sub_pk:
-                rg_name = row['NAME']
-                cursor.execute('INSERT INTO resource_groups (name, subscription_id) VALUES (?, ?)', (rg_name, sub_pk))
-                rg_pk = cursor.lastrowid
-                rg_name_sub_pk_to_pk[(rg_name.upper(), sub_pk)] = rg_pk
-    print(f"Seeded {len(rg_name_sub_pk_to_pk)} resource groups.")
-
-    vm_name_to_pk = {}
-    with open(VMS_CSV, 'r', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            sub_pk = sub_name_to_pk.get(row['SUBSCRIPTION'].upper())
-            if sub_pk:
-                rg_pk = rg_name_sub_pk_to_pk.get((row['RESOURCE GROUP'].upper(), sub_pk))
-                if rg_pk:
-                    cursor.execute('INSERT INTO vms (name, location, status, os, size, public_ip, disks, resource_group_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                                   (row['NAME'], row['LOCATION'], row['STATUS'], row['OPERATING SYSTEM'], row['SIZE'], row['PUBLIC IP ADDRESS'], row['DISKS'], rg_pk))
-                    vm_name_to_pk[row['NAME']] = cursor.lastrowid
-    print(f"Seeded {len(vm_name_to_pk)} VMs.")
-
-    vmss_name_to_pk = {}
-    with open(VMSS_CSV, 'r', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            sub_pk = sub_name_to_pk.get(row['SUBSCRIPTION'].upper())
-            if sub_pk:
-                rg_pk = rg_name_sub_pk_to_pk.get((row['RESOURCE GROUP'].upper(), sub_pk))
-                if rg_pk:
-                     cursor.execute('INSERT INTO vmss (name, location, provisioning_state, status, os, size, instances, orchestration_mode, public_ip, resource_group_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                                   (row['NAME'], row['LOCATION'], row['PROVISIONING STATE'], row['STATUS'], row['OPERATING SYSTEM'], row['SIZE'], row['INSTANCES'], row['ORCHESTRATION MODE'], row['PUBLIC IP ADDRESS'], rg_pk))
-                     vmss_name_to_pk[row['NAME']] = cursor.lastrowid
-    print(f"Seeded {len(vmss_name_to_pk)} VM Scale Sets.")
-    
-    rec_text_to_pk = {}
-    rec_count = 0
-    skipped_count = 0
-    with open(advisor_csv_file, 'r', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row['Type'] == 'Subscription' and row['Category'] == 'Cost':
-                skipped_count += 1
-                continue
-
-            rec_text = row['Recommendation']
-            rec_type_pk = rec_text_to_pk.get(rec_text)
-            if not rec_type_pk:
-                cursor.execute('INSERT INTO recommendation_types (text, category, impact) VALUES (?, ?, ?)',
-                               (rec_text, row['Category'], row['Business Impact']))
-                rec_type_pk = cursor.lastrowid
-                rec_text_to_pk[rec_text] = rec_type_pk
-            
-            resource_name = row['Resource Name']
-            resource_type = row['Type']
-            resource_id = None
-            
-            if resource_type == 'Virtual machine':
-                resource_id = vm_name_to_pk.get(resource_name)
-            elif resource_type == 'Virtual machine scale set':
-                resource_id = vmss_name_to_pk.get(resource_name)
-            
-            # **MODIFIED LOGIC**: Parse the subscription name from the combined string
-            subscription_name_from_csv = row['Subscription Name']
-            clean_subscription_name = subscription_name_from_csv.split(' (')[0]
-
-            savings_str = row.get('Potential Annual Cost Savings', '0').replace(',', '')
-            savings = float(savings_str) if savings_str else 0.0
-            cursor.execute('INSERT INTO recommendation_instances (recommendation_type_id, resource_id, resource_type, subscription_name, resource_group_name, resource_name, potential_savings) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                           (rec_type_pk, resource_id, resource_type, clean_subscription_name, row['Resource Group'], resource_name, savings))
-            rec_count += 1
-
-    print(f"Seeded {rec_count} recommendation instances.")
-    if skipped_count > 0:
-        print(f"Skipped {skipped_count} redundant subscription-level cost recommendations.")
+        # --- Subscriptions ---
+        sub_name_map = {}
+        with open(SUBSCRIPTIONS_CSV, 'r', encoding='utf-8-sig') as f:
+            if 'sep=' in f.readline().lower(): pass
+            else: f.seek(0)
+            reader = csv.DictReader(f)
+            for row in reader:
+                sub = Subscription(name=row['SUBSCRIPTION NAME'], subscription_id_guid=row['SUBSCRIPTION ID'])
+                db.session.add(sub)
+                sub_name_map[sub.name.upper()] = sub
+        db.session.commit()
+        print(f"Seeded {len(sub_name_map)} subscriptions.")
         
-    conn.commit()
-    conn.close()
+        # --- Resource Groups ---
+        rg_map = {}
+        with open(RESOURCE_GROUPS_CSV, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                sub_obj = sub_name_map.get(row['SUBSCRIPTION'].upper())
+                if sub_obj:
+                    rg = ResourceGroup(name=row['NAME'], subscription=sub_obj)
+                    db.session.add(rg)
+                    rg_map[(rg.name.upper(), sub_obj.id)] = rg
+        db.session.commit()
+        print(f"Seeded {len(rg_map)} resource groups.")
+
+        # --- VMs (Case-Insensitive Mapping) ---
+        vm_map = {}
+        with open(VMS_CSV, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                sub_obj = sub_name_map.get(row['SUBSCRIPTION'].upper())
+                if sub_obj:
+                    rg_obj = rg_map.get((row['RESOURCE GROUP'].upper(), sub_obj.id))
+                    if rg_obj:
+                        vm = VM(name=row['NAME'], location=row['LOCATION'], status=row['STATUS'], 
+                                os=row['OPERATING SYSTEM'], size=row['SIZE'], public_ip=row['PUBLIC IP ADDRESS'], 
+                                disks=row['DISKS'], resource_group=rg_obj)
+                        db.session.add(vm)
+                        vm_map[vm.name.upper()] = vm # Use upper for case-insensitive key
+        db.session.commit()
+        print(f"Seeded {len(vm_map)} VMs.")
+
+        # --- VMSS (Case-Insensitive Mapping) ---
+        vmss_map = {}
+        with open(VMSS_CSV, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                sub_obj = sub_name_map.get(row['SUBSCRIPTION'].upper())
+                if sub_obj:
+                    rg_obj = rg_map.get((row['RESOURCE GROUP'].upper(), sub_obj.id))
+                    if rg_obj:
+                        vmss = VMSS(name=row['NAME'], location=row['LOCATION'], provisioning_state=row['PROVISIONING STATE'],
+                                    status=row['STATUS'], os=row['OPERATING SYSTEM'], size=row['SIZE'], 
+                                    instances=row['INSTANCES'], orchestration_mode=row['ORCHESTRATION MODE'], 
+                                    public_ip=row['PUBLIC IP ADDRESS'], resource_group=rg_obj)
+                        db.session.add(vmss)
+                        vmss_map[vmss.name.upper()] = vmss # Use upper for case-insensitive key
+        db.session.commit()
+        print(f"Seeded {len(vmss_map)} VM Scale Sets.")
+        
+        # --- Recommendations (with Case-Insensitive Linking) ---
+        rec_type_map = {}
+        rec_count, skipped_count = 0, 0
+        with open(advisor_csv_file, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row['Type'] == 'Subscription' and row['Category'] == 'Cost':
+                    skipped_count += 1
+                    continue
+
+                rec_text = row['Recommendation']
+                rec_type = rec_type_map.get(rec_text)
+                if not rec_type:
+                    rec_type = RecommendationType(text=rec_text, category=row['Category'], impact=row['Business Impact'])
+                    db.session.add(rec_type)
+                    db.session.flush() 
+                    rec_type_map[rec_text] = rec_type
+                
+                resource_name_from_csv = row['Resource Name']
+                resource_type_str = row['Type']
+                
+                resource_id = None
+                # Use the correctly cased name from the original resource object
+                correctly_cased_resource_name = resource_name_from_csv 
+
+                resource_obj = None
+                if resource_type_str == 'Virtual machine':
+                    resource_obj = vm_map.get(resource_name_from_csv.upper())
+                elif resource_type_str == 'Virtual machine scale set':
+                    resource_obj = vmss_map.get(resource_name_from_csv.upper())
+                
+                if resource_obj:
+                    resource_id = resource_obj.id
+                    correctly_cased_resource_name = resource_obj.name # Get the correct casing!
+                
+                savings_str = row.get('Potential Annual Cost Savings', '0').replace(',', '')
+                savings = float(savings_str) if savings_str else 0.0
+                
+                rec_instance = RecommendationInstance(
+                    recommendation_type=rec_type,
+                    resource_id=resource_id,
+                    resource_type=resource_type_str,
+                    subscription_name=row['Subscription Name'].split(' (')[0],
+                    resource_group_name=row['Resource Group'],
+                    resource_name=correctly_cased_resource_name, # Store the name with correct casing
+                    potential_savings=savings
+                )
+                db.session.add(rec_instance)
+                rec_count += 1
+        
+        db.session.commit()
+        print(f"Seeded {rec_count} recommendation instances.")
+        if skipped_count > 0:
+            print(f"Skipped {skipped_count} redundant subscription-level cost recommendations.")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Seed Azure Advisor report data into a SQLite database.")
+    parser = argparse.ArgumentParser(description="Seed Azure Advisor report data into a SQLite database using SQLAlchemy.")
     parser.add_argument("client_name", type=str, help="The name of the client for this report.")
     args = parser.parse_args()
 
+    flask_app = create_flask_app()
     advisor_file, report_date = find_advisor_file()
     
-    create_database()
-    seed_data(args.client_name, report_date, advisor_file)
-    print("\nDatabase seeding complete. You can now run 'app.py'.")
+    create_database(flask_app)
+    seed_data(flask_app, args.client_name, report_date, advisor_file)
+    
+    print("\nDatabase seeding complete. You can now run 'python app.py'.")
