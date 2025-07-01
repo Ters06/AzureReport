@@ -47,7 +47,7 @@ Your folder structure should now look like this:
 
 * Open your terminal or command prompt and navigate to the "AzureDynamicReport" folder.  
 * **Step 1: Create the database (Run this for each new client)**  
-  python seeder.py "Le Forem"
+  python seeder.py "<Client Name>"
 
 * **Step 2: Start the web server**  
   python app.py
