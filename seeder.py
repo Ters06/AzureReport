@@ -4,25 +4,17 @@ import glob
 import re
 import argparse
 from datetime import datetime
-from flask import Flask
 
-# Import the database object and models
-from models import db, ClientInfo, Subscription, ResourceGroup, VM, VMSS, RecommendationType, RecommendationInstance
+# Import the application factory and db instance from the app package
+from app import create_app, db
+# Import models directly from the app package's models module
+from app.models import ClientInfo, Subscription, ResourceGroup, VM, VMSS, RecommendationType, RecommendationInstance
 
 # --- Configuration ---
 VMS_CSV = 'AzureVirtualMachines.csv'
 VMSS_CSV = 'AzurevirtualMachineScaleSets.csv'
 SUBSCRIPTIONS_CSV = 'Subscriptions.csv'
 RESOURCE_GROUPS_CSV = 'Azureresourcegroups.csv'
-
-def create_flask_app():
-    """Creates a Flask app instance for context."""
-    app = Flask(__name__)
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'report.db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
-    return app
 
 def find_advisor_file():
     """Finds the advisor CSV file and extracts the date from its name."""
@@ -49,7 +41,8 @@ def find_advisor_file():
 def create_database(app):
     """Creates the database and tables from the models."""
     with app.app_context():
-        db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'report.db')
+        # The path is now relative to the instance folder of the app
+        db_path = app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', '')
         if os.path.exists(db_path):
             os.remove(db_path)
             print(f"Removed existing database '{db_path}'.")
@@ -102,7 +95,7 @@ def seed_data(app, client_name, report_date, advisor_csv_file):
                                 os=row['OPERATING SYSTEM'], size=row['SIZE'], public_ip=row['PUBLIC IP ADDRESS'], 
                                 disks=row['DISKS'], resource_group=rg_obj)
                         db.session.add(vm)
-                        vm_map[vm.name.upper()] = vm # Use upper for case-insensitive key
+                        vm_map[vm.name.upper()] = vm
         db.session.commit()
         print(f"Seeded {len(vm_map)} VMs.")
 
@@ -120,7 +113,7 @@ def seed_data(app, client_name, report_date, advisor_csv_file):
                                     instances=row['INSTANCES'], orchestration_mode=row['ORCHESTRATION MODE'], 
                                     public_ip=row['PUBLIC IP ADDRESS'], resource_group=rg_obj)
                         db.session.add(vmss)
-                        vmss_map[vmss.name.upper()] = vmss # Use upper for case-insensitive key
+                        vmss_map[vmss.name.upper()] = vmss
         db.session.commit()
         print(f"Seeded {len(vmss_map)} VM Scale Sets.")
         
@@ -146,7 +139,6 @@ def seed_data(app, client_name, report_date, advisor_csv_file):
                 resource_type_str = row['Type']
                 
                 resource_id = None
-                # Use the correctly cased name from the original resource object
                 correctly_cased_resource_name = resource_name_from_csv 
 
                 resource_obj = None
@@ -157,7 +149,7 @@ def seed_data(app, client_name, report_date, advisor_csv_file):
                 
                 if resource_obj:
                     resource_id = resource_obj.id
-                    correctly_cased_resource_name = resource_obj.name # Get the correct casing!
+                    correctly_cased_resource_name = resource_obj.name
                 
                 savings_str = row.get('Potential Annual Cost Savings', '0').replace(',', '')
                 savings = float(savings_str) if savings_str else 0.0
@@ -168,7 +160,7 @@ def seed_data(app, client_name, report_date, advisor_csv_file):
                     resource_type=resource_type_str,
                     subscription_name=row['Subscription Name'].split(' (')[0],
                     resource_group_name=row['Resource Group'],
-                    resource_name=correctly_cased_resource_name, # Store the name with correct casing
+                    resource_name=correctly_cased_resource_name,
                     potential_savings=savings
                 )
                 db.session.add(rec_instance)
@@ -184,10 +176,12 @@ if __name__ == '__main__':
     parser.add_argument("client_name", type=str, help="The name of the client for this report.")
     args = parser.parse_args()
 
-    flask_app = create_flask_app()
+    # Create an app instance for context
+    flask_app = create_app()
+    
     advisor_file, report_date = find_advisor_file()
     
     create_database(flask_app)
     seed_data(flask_app, args.client_name, report_date, advisor_file)
     
-    print("\nDatabase seeding complete. You can now run 'python app.py'.")
+    print("\nDatabase seeding complete. You can now run 'python run.py'.")

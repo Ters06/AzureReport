@@ -21,7 +21,7 @@
             <tbody>
             {% for vm in vms %}
                 <tr>
-                    <td><a href="{{ url_for('vm_detail', vm_name=vm.name) }}" class="link-style">{{ vm.name }}</a></td>
+                    <td><a href="{{ url_for('vms.vm_detail', vm_name=vm.name) }}" class="link-style">{{ vm.name }}</a></td>
                     <td>{{ vm.subscription_name }}</td>
                     <td>{{ vm.resource_group_name }}</td>
                     <td>{{ vm.os }}</td>

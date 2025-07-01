@@ -3,7 +3,7 @@
 {% block content %}
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ vm.name }}</h1>
-    <a href="{{ url_for('vms_list') }}" class="text-blue-500 hover:underline">&larr; Back to VM List</a>
+    <a href="{{ url_for('vms.vms_list') }}" class="text-blue-500 hover:underline">&larr; Back to VM List</a>
 </div>
 <div class="report-card p-6 mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
     <div><h3 class="kpi-title">Subscription</h3><p>{{ vm.resource_group.subscription.name }}</p></div>

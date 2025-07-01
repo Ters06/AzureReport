@@ -7,11 +7,11 @@
 </header>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-    <a href="{{ url_for('recommendations_list') }}" class="kpi-card block hover:ring-blue-500"><h3 class="kpi-title">Total Recommendations</h3><p class="text-4xl font-bold text-blue-500">{{ total_recs }}</p></a>
-    <a href="{{ url_for('recommendations_list', impact='High') }}" class="kpi-card block hover:ring-red-500"><h3 class="kpi-title">High Impact</h3><p class="text-4xl font-bold text-red-500">{{ high_impact }}</p></a>
-    <a href="{{ url_for('recommendations_list', category='cost') }}" class="kpi-card block hover:ring-green-500"><h3 class="kpi-title">Potential Savings</h3><p class="text-4xl font-bold text-green-500">{{ total_savings|format_currency }}</p></a>
-    <a href="{{ url_for('vms_list') }}" class="kpi-card block hover:ring-purple-500"><h3 class="kpi-title">Virtual Machines</h3><p class="text-4xl font-bold text-purple-500">{{ vm_count }}</p></a>
-    <a href="{{ url_for('vmss_list') }}" class="kpi-card block hover:ring-indigo-500"><h3 class="kpi-title">VM Scale Sets</h3><p class="text-4xl font-bold text-indigo-500">{{ vmss_count }}</p></a>
+    <a href="{{ url_for('recs.recommendations_list') }}" class="kpi-card block hover:ring-blue-500"><h3 class="kpi-title">Total Recommendations</h3><p class="text-4xl font-bold text-blue-500">{{ total_recs }}</p></a>
+    <a href="{{ url_for('recs.recommendations_list', impact='High') }}" class="kpi-card block hover:ring-red-500"><h3 class="kpi-title">High Impact</h3><p class="text-4xl font-bold text-red-500">{{ high_impact }}</p></a>
+    <a href="{{ url_for('recs.recommendations_list', category='cost') }}" class="kpi-card block hover:ring-green-500"><h3 class="kpi-title">Potential Savings</h3><p class="text-4xl font-bold text-green-500">{{ total_savings|format_currency }}</p></a>
+    <a href="{{ url_for('vms.vms_list') }}" class="kpi-card block hover:ring-purple-500"><h3 class="kpi-title">Virtual Machines</h3><p class="text-4xl font-bold text-purple-500">{{ vm_count }}</p></a>
+    <a href="{{ url_for('vms.vmss_list') }}" class="kpi-card block hover:ring-indigo-500"><h3 class="kpi-title">VM Scale Sets</h3><p class="text-4xl font-bold text-indigo-500">{{ vmss_count }}</p></a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
@@ -36,8 +36,8 @@
                     <button type="button" id="group-by-category-btn" class="group-by-btn">Category</button>
                 </div>
             </div>
-            <label class="flex items-center text-sm"><input type="checkbox" id="hide-sub-id-toggle" class="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"> Hide Subscription ID</label>
-            <label class="flex items-center text-sm"><input type="checkbox" id="show-with-recs-toggle" class="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"> Show only with recommendations</label>
+            <label class="flex items-center text-sm"><input type="checkbox" id="hide-sub-id-toggle" class="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked> Hide Subscription ID</label>
+            <label class="flex items-center text-sm"><input type="checkbox" id="show-with-recs-toggle" class="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked> Show only with recommendations</label>
         </div>
     </div>
     <div class="h-96 w-full relative"><canvas id="subscriptionChart"></canvas></div>

@@ -24,28 +24,33 @@
 
 Your folder structure should now look like this:
 
-/AzureDynamicReport  
-|-- app.py  
+/AzureReport  
+|-- app/
+|   |-- __init__.py
+|   |-- models.py
+|   |-- context_processors.py
+|   |-- routes/
+|   |   |-- __init__.py
+|   |   |-- api.py
+|   |   |-- main.py
+|   |   |-- recommendations.py
+|   |   |-- vms.py
+|   |-- static/
+|   |   |-- js/
+|   |       |-- charts.js
+|   |       |-- tables.js
+|   |       |-- ui.js
+|   |-- templates/
+|       |-- (all .html files)
+|-- run.py
 |-- seeder.py
-|-- models.py
 |-- requirements.txt
 |-- Advisor\_\*.csv  
 |-- AzureVirtualMachines.csv  
 |-- AzurevirtualMachineScaleSets.csv  
 |-- Subscriptions.csv  
 |-- Azureresourcegroups.csv
-|-- <Azure Service>.csv
-|-- /static  
-|   |-- /js  
-|       |-- main.js  
-|-- /templates  
-    |-- layout.html  
-    |-- index.html  
-    |-- vms.html  
-    |-- vm\_detail.html  
-    |-- vmss.html  
-    |-- vmss\_detail.html  
-    |-- recommendations.html
+|-- <Other Azure Service>.csv
 
 ### **3. Run the Application:**
 

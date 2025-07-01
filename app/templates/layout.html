@@ -66,18 +66,18 @@
         <div class="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/" class="font-bold text-xl text-blue-600 dark:text-blue-400">{{ client_name }} Azure Report</a>
+                    <a href="{{ url_for('main.index') }}" class="font-bold text-xl text-blue-600 dark:text-blue-400">{{ client_name }} Azure Report</a>
                 </div>
                 <div class="flex space-x-2 items-center">
-                    <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
+                    <a href="{{ url_for('main.index') }}" class="nav-link">Dashboard</a>
                     <div class="relative">
                         <button data-dropdown-toggle="resources-dropdown" class="nav-link flex items-center">
                             Resources
                             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                         <div id="resources-dropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg py-1 hidden z-20">
-                            <a href="{{ url_for('vms_list') }}" class="nav-dropdown-item">Virtual Machines</a>
-                            <a href="{{ url_for('vmss_list') }}" class="nav-dropdown-item">VM Scale Sets</a>
+                            <a href="{{ url_for('vms.vms_list') }}" class="nav-dropdown-item">Virtual Machines</a>
+                            <a href="{{ url_for('vms.vmss_list') }}" class="nav-dropdown-item">VM Scale Sets</a>
                         </div>
                     </div>
                      <div class="relative">
@@ -88,7 +88,7 @@
                         <div id="recommendations-dropdown" class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-700 rounded-md shadow-lg py-1 hidden z-20">
                             {% for cat in nav_categories %}
                                 {% if cat.category %}
-                                <a href="{{ url_for('recommendations_list', category=cat.category|replace(' ', '-')|lower) }}" class="nav-dropdown-item">{{ cat.category }}</a>
+                                <a href="{{ url_for('recs.recommendations_list', category=cat.category|replace(' ', '-')|lower) }}" class="nav-dropdown-item">{{ cat.category }}</a>
                                 {% endif %}
                             {% endfor %}
                         </div>
@@ -103,6 +103,8 @@
         </div>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tables.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
 </body>
 </html>
