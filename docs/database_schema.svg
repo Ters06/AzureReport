@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="87.9615 9.0752 964 472.8638" width="964px" height="472.864px">
+  <defs>
+    <marker id="crow-one-start" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 5 L 10 5" fill="none" stroke="#6b7280" stroke-width="1.5" />
+      <path d="M 10 0 L 10 10" fill="none" stroke="#6b7280" stroke-width="1.5" />
+    </marker>
+    <marker id="crow-many-end" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 10 6 L 0 6" fill="none" stroke="#6b7280" stroke-width="1.5" />
+      <path d="M 0 0 L 10 6 L 0 12 L 0 0" fill="none" stroke="#6b7280" stroke-width="1.5" />
+    </marker>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb923c" />
+    </marker>
+  </defs>
+  <g id="ClientInfo" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 87.96150207519534, 39.075172424316406)">
+    <rect width="180" height="95" rx="5" style="fill: #fefce8; stroke: #ca8a04; stroke-width: 1.5;" />
+    <text x="90" y="20" text-anchor="middle" style="font-weight: 600; fill: rgb(133, 77, 14); white-space: pre;">ClientInfo</text>
+    <line x1="10" y1="30" x2="170" y2="30" style="stroke: #eab308; stroke-width: 1.5;" />
+    <text x="15" y="50" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre;">id (PK)</text>
+    <text x="15" y="65" style="fill: rgb(55, 65, 81); white-space: pre;">name</text>
+    <text x="15" y="80" style="fill: rgb(55, 65, 81); white-space: pre;">report_date</text>
+  </g>
+  <g id="Subscription" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 87.96150207519534, 239.07516479492188)">
+    <rect width="180" height="80" rx="5" style="fill: #eef2ff; stroke: #818cf8; stroke-width: 1.5;" />
+    <text x="90" y="20" text-anchor="middle" style="font-weight: 600; fill: rgb(67, 56, 202); white-space: pre;">Subscription</text>
+    <line x1="10" y1="30" x2="170" y2="30" style="stroke: #9ca3af; stroke-width: 1.5;" />
+    <text x="15" y="50" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre;">id (PK)</text>
+    <text x="15" y="65" style="fill: rgb(55, 65, 81); white-space: pre;">name</text>
+  </g>
+  <g id="ResourceGroup" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 317.96148681640625, 239.07516479492188)">
+    <rect width="180" height="95" rx="5" style="fill: #eef2ff; stroke: #818cf8; stroke-width: 1.5;" />
+    <text x="90" y="20" text-anchor="middle" style="font-weight: 600; fill: rgb(67, 56, 202); white-space: pre;">ResourceGroup</text>
+    <line x1="10" y1="30" x2="170" y2="30" style="stroke: #9ca3af; stroke-width: 1.5;" />
+    <text x="15" y="50" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre;">id (PK)</text>
+    <text x="15" y="65" style="fill: rgb(55, 65, 81); white-space: pre;">name</text>
+    <text x="15" y="80" style="font-style: italic; fill: rgb(107, 114, 128); white-space: pre;">subscription_id (FK)</text>
+  </g>
+  <g id="Resource" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 547.9614868164062, 239.07516479492188)">
+    <rect width="200" height="130" rx="5" style="fill: #eef2ff; stroke: #818cf8; stroke-width: 1.5;" />
+    <text x="100" y="20" text-anchor="middle" style="font-weight: 600; fill: rgb(67, 56, 202); white-space: pre;">Resource (Polymorphic)</text>
+    <line x1="10" y1="30" x2="190" y2="30" style="stroke: #9ca3af; stroke-width: 1.5;" />
+    <text x="15" y="50" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre;">id (PK)</text>
+    <text x="15" y="65" style="fill: rgb(55, 65, 81); white-space: pre;">name</text>
+    <text x="15" y="80" style="fill: rgb(55, 65, 81); white-space: pre;">type</text>
+    <text x="15" y="95" style="fill: rgb(55, 65, 81); white-space: pre;">location</text>
+    <text x="15" y="110" style="font-style: italic; fill: rgb(107, 114, 128); white-space: pre;">resource_group_id (FK)</text>
+  </g>
+  <g id="VM" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 871.9614868164062, 9.075172424316406)">
+    <rect width="180" height="130" rx="5" style="fill: #eef2ff; stroke: #818cf8; stroke-width: 1.5;" />
+    <text x="90" y="20" text-anchor="middle" style="font-weight: 600; fill: rgb(67, 56, 202); white-space: pre;">VM</text>
+    <line x1="10" y1="30" x2="170" y2="30" style="stroke: #9ca3af; stroke-width: 1.5;" />
+    <text x="15" y="50" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre;">id (PK, FK)</text>
+    <text x="15" y="65" style="fill: rgb(55, 65, 81); white-space: pre;">status</text>
+    <text x="15" y="80" style="fill: rgb(55, 65, 81); white-space: pre;">os</text>
+    <text x="15" y="95" style="fill: rgb(55, 65, 81); white-space: pre;">size</text>
+    <text x="15" y="110" style="fill: rgb(55, 65, 81); white-space: pre;">...</text>
+  </g>
+  <g id="StorageAccount" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 871.9614868164062, 159.07516479492188)">
+    <rect width="180" height="95" rx="5" style="fill: #eef2ff; stroke: #818cf8; stroke-width: 1.5;" />
+    <text x="90" y="20" text-anchor="middle" style="font-weight: 600; fill: rgb(67, 56, 202); white-space: pre;">StorageAccount</text>
+    <line x1="10" y1="30" x2="170" y2="30" style="stroke: #9ca3af; stroke-width: 1.5;" />
+    <text x="15" y="50" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre;">id (PK, FK)</text>
+    <text x="15" y="65" style="fill: rgb(55, 65, 81); white-space: pre;">sku</text>
+    <text x="15" y="80" style="fill: rgb(55, 65, 81); white-space: pre;">kind</text>
+  </g>
+  <g id="VMSS" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 871.9614868164062, 274.0751647949219)">
+    <rect width="180" height="110" rx="5" style="fill: #eef2ff; stroke: #818cf8; stroke-width: 1.5;" />
+    <text x="90" y="20" text-anchor="middle" style="font-weight: 600; fill: rgb(67, 56, 202); white-space: pre;">VMSS</text>
+    <line x1="10" y1="30" x2="170" y2="30" style="stroke: #9ca3af; stroke-width: 1.5;" />
+    <text x="15" y="50" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre;">id (PK, FK)</text>
+    <text x="15" y="65" style="fill: rgb(55, 65, 81); white-space: pre;">status</text>
+    <text x="15" y="80" style="fill: rgb(55, 65, 81); white-space: pre;">os</text>
+    <text x="15" y="95" style="fill: rgb(55, 65, 81); white-space: pre;">...</text>
+  </g>
+  <rect width="233.27" height="95" rx="5" style="fill: rgb(238, 242, 255); stroke: rgb(129, 140, 248); stroke-width: 1.5;" x="547.962" y="39.075" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+  <text x="662.962" y="59.075" text-anchor="middle" style="font-weight: 600; fill: rgb(67, 56, 202); white-space: pre; stroke-width: 1; font-size: 16px;" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)">RecommendationInstance</text>
+  <line x1="557.962" y1="69.075" x2="770.193" y2="69.075" style="stroke: rgb(156, 163, 175); stroke-width: 1.5;" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+  <text x="562.962" y="89.075" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre; stroke-width: 1; font-size: 16px;" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)">id (PK)</text>
+  <text x="562.962" y="104.075" style="font-style: italic; fill: rgb(107, 114, 128); white-space: pre; stroke-width: 1; font-size: 16px;" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)">recommendation_type_id (FK)</text>
+  <text x="562.962" y="119.075" style="font-style: italic; fill: rgb(107, 114, 128); white-space: pre; stroke-width: 1; font-size: 16px;" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)">resource_id (FK)</text>
+  <g id="RecommendationType" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 300.4873352050781, 34.643775939941406)">
+    <rect width="200" height="110" rx="5" style="fill: #eef2ff; stroke: #818cf8; stroke-width: 1.5;" />
+    <text x="100" y="20" text-anchor="middle" style="font-weight: 600; fill: rgb(67, 56, 202); white-space: pre;">RecommendationType</text>
+    <line x1="10" y1="30" x2="190" y2="30" style="stroke: #9ca3af; stroke-width: 1.5;" />
+    <text x="15" y="50" style="font-weight: 500; fill: rgb(55, 65, 81); white-space: pre;">id (PK)</text>
+    <text x="15" y="65" style="fill: rgb(55, 65, 81); white-space: pre;">text</text>
+    <text x="15" y="80" style="fill: rgb(55, 65, 81); white-space: pre;">category</text>
+    <text x="15" y="95" style="fill: rgb(55, 65, 81); white-space: pre;">impact</text>
+  </g>
+  <path d="M 267.962 279.075 L 317.962 279.075" style="stroke: #6b7280; stroke-width: 1.5;" marker-start="url(#crow-one-start)" marker-end="url(#crow-many-end)" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+  <path d="M 497.963 304.075 L 547.963 304.075" style="stroke: #6b7280; stroke-width: 1.5;" marker-start="url(#crow-one-start)" marker-end="url(#crow-many-end)" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+  <path d="M 908.715 -379.28 L 908.716 -277.55" style="stroke: rgb(107, 114, 128); stroke-width: 1.5; transform-origin: 783.179px -70.958px;" fill="none" marker-start="url(#crow-one-start)" marker-end="url(#crow-many-end)" transform="matrix(-1, 0, 0, -1, 0, -0.0000153)" />
+  <path d="M 871.78 74.075 C 798.738 74.075 798.738 256.75 750.041 256.75" stroke-dasharray="5,5" style="stroke: rgb(251, 146, 60); stroke-width: 2; marker-end: url(&quot;#arrow&quot;);" fill="none" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+  <path d="M 871.78 342.487 C 798.737 342.487 798.737 307.487 750.041 307.487" stroke-dasharray="5,5" style="stroke: rgb(251, 146, 60); stroke-width: 2; marker-end: url(&quot;#arrow&quot;);" fill="none" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+  <g transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 871.7800903320312, 416.9389343261719)">
+    <rect width="180" height="65" rx="5" style="fill: #f0fdf4; stroke: #4ade80; stroke-width: 1.5; stroke-dasharray: 4;" />
+    <text x="90" y="25" text-anchor="middle" style="font-weight: 500; fill: rgb(22, 101, 52); white-space: pre;">Other services like</text>
+    <text x="90" y="40" text-anchor="middle" style="font-weight: 500; fill: rgb(22, 101, 52); white-space: pre;">KeyVault or PublicIP</text>
+    <text x="90" y="55" text-anchor="middle" style="font-weight: 500; fill: rgb(22, 101, 52); white-space: pre;">inherit from Resource.</text>
+  </g>
+  <path d="M 870.173 194.208 C 799.001 194.208 799.001 282.271 751.553 282.271" stroke-dasharray="5,5" style="stroke: rgb(251, 146, 60); stroke-width: 2; marker-end: url(&quot;#arrow&quot;);" fill="none" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+  <path d="M 871.213 441.152 C 798.17 441.152 798.17 355.207 749.474 355.207" stroke-dasharray="5,5" style="stroke: rgb(251, 146, 60); stroke-width: 2; marker-end: url(&quot;#arrow&quot;);" fill="none" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+  <path d="M 501.739 93.131 L 545.94 93.131" style="stroke: rgb(107, 114, 128); stroke-width: 1.5;" marker-start="url(#crow-one-start)" marker-end="url(#crow-many-end)" transform="matrix(0.9999999999999999, 0, 0, 0.9999999999999999, 0, 0)" />
+</svg>
