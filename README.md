@@ -22,7 +22,7 @@ The application is built using a modern Python web stack and a modular design pa
 
 The project follows a standard Flask application factory pattern. The app/services/ directory is the heart of the modular system, where each subdirectory represents a distinct Azure service plugin.
 
-*A visual representation of the project's folder and file layout.*
+![DB schema](./docs/project_structure.svg)
 
 ### **Database Schema**
 
@@ -31,7 +31,6 @@ The database is designed around a central, polymorphic Resource table. This tabl
 Recommendations are stored in their own tables and are linked to the central Resource table thanks to a relational table to describe the many to many relationship.
 
 ![DB schema](./docs/database_schema.svg)
-*A diagram illustrating the relationships between the main database tables.*
 
 ## **Extending the Application**
 
